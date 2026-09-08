@@ -1,0 +1,48 @@
+# TẦNG APPLICATION — chạy TRÊN VM Target Linux (172.16.50.20)
+# Khởi động:  docker compose -f app/docker-compose.yml up -d
+#
+# CẢNH BÁO: mọi thứ trong file này CỐ TÌNH cấu hình sai. Chỉ chạy trong
+# mạng host-only 172.16.50.0/24, không bao giờ expose ra Internet.
+
+services:
+
+  # --- DVWA: target chính của SAST/DAST ------------------------------------
+  # Chọn DVWA vì có nút "View Source" và chuyển được security level
+  # low -> impossible => xem được mã nguồn của đúng lỗ hổng vừa quét ra.
+  dvwa:
+    image: vulnerables/web-dvwa:latest      # :latest cố tình không pin -> trivy config báo
+    container_name: lab-dvwa
+    ports:
+      - "8080:80"
+    environment:
+      # Bật sẵn allow_url_include cho phần File Inclusion
+      - PHPIDS_ENABLED=0
+    restart: unless-stopped
+    # KHÔNG có user: -> chạy root. Đây là finding của `trivy config` / CIS Docker.
+
+  # --- OWASP Juice Shop: target thứ hai, modern SPA -------------------------
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    container_name: lab-juice
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  # --- Nginx reverse proxy CỐ TÌNH thiếu security header --------------------
+  # Đây là target của `nikto`, `curl -I`, và alert "missing header" của ZAP.
+  nginx:
+    image: nginx:1.21                        # bản cũ -> grype/trivy tìm được CVE
+    container_name: lab-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/webroot:/usr/share/nginx/html:ro
+    depends_on:
+      - dvwa
+      - juice-shop
+    restart: unless-stopped
+
+networks:
+  default:
+    name: lab-app

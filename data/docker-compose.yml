@@ -1,0 +1,87 @@
+# TẦNG DATA — chạy TRÊN VM Target Linux (172.16.50.20)
+# Tổ chức theo BA TRẠNG THÁI DỮ LIỆU của slide 46: at rest / in transit / in use.
+#
+# Khởi động:  docker compose -f data/docker-compose.yml up -d
+# CẢNH BÁO: mọi datastore ở đây KHÔNG bật xác thực. Chỉ chạy trong host-only net.
+
+services:
+
+  # === DATA AT REST =========================================================
+
+  # [DATA-01] MongoDB không bật auth, bind 0.0.0.0
+  #           -> nmap --script mongodb-info đọc được, mongosh vào thẳng không cần credential
+  mongo:
+    image: mongo:6.0
+    container_name: lab-mongo
+    command: ["mongod", "--bind_ip_all"]     # CỐ TÌNH không có --auth
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+  # [DATA-02] Redis không đặt requirepass, không protected-mode
+  redis:
+    image: redis:7.0
+    container_name: lab-redis
+    command: ["redis-server", "--protected-mode", "no"]   # CỐ TÌNH không có --requirepass
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # [DATA-03] MinIO với bucket policy public-read (thiết lập bởi service `minio-init`)
+  minio:
+    image: minio/minio:RELEASE.2023-05-04T21-44-30Z
+    container_name: lab-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: labminioadmin
+      MINIO_ROOT_PASSWORD: labminio-secret-2026   # credential lab, bịa hoàn toàn
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+
+  # Tạo bucket + mở public read + upload file backup .sql không mã hoá
+  minio-init:
+    image: minio/mc:RELEASE.2023-05-04T18-10-16Z
+    container_name: lab-minio-init
+    depends_on:
+      - minio
+    volumes:
+      - ./seed/out:/seed:ro
+    entrypoint: >
+      /bin/sh -c "
+        until mc alias set lab http://minio:9000 labminioadmin labminio-secret-2026; do sleep 2; done;
+        mc mb --ignore-existing lab/hocvien-backup;
+        mc anonymous set download lab/hocvien-backup;
+        mc cp /seed/hocvien-backup.sql lab/hocvien-backup/ || true;
+        mc cp /seed/pii.csv            lab/hocvien-backup/ || true;
+        echo '[minio-init] bucket hocvien-backup da mo public-read';
+      "
+    restart: "no"
+
+  # === DATA IN TRANSIT ======================================================
+
+  # [DATA-04] HTTPS với self-signed cert + TLS 1.0/1.1 + cipher yếu
+  #           -> target của testssl.sh và nmap --script ssl-enum-ciphers.
+  #           nginx:1.21 dùng OpenSSL 1.1.1, còn bật lại được TLS 1.0 (@SECLEVEL=0).
+  weak-tls:
+    image: nginx:1.21
+    container_name: lab-weak-tls
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./tls/weak-tls.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./tls/certs:/etc/nginx/certs:ro
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  minio-data:
+
+networks:
+  default:
+    name: lab-data

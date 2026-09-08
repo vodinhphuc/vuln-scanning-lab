@@ -1,0 +1,28 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Đăng ký — demo client-side validation</title>
+<style>body{font-family:system-ui;max-width:640px;margin:3rem auto;line-height:1.6}
+input{padding:.4rem;width:100%;box-sizing:border-box;margin:.3rem 0}
+.hint{color:#666;font-size:.9rem}</style>
+<h1>Form đăng ký</h1>
+<p class="hint">Form này CHỈ kiểm tra dữ liệu bằng JavaScript phía trình duyệt.
+Slide 42 — <em>server-side vs client-side validation</em>.</p>
+
+<form id="f" method="POST" action="/dvwa/vulnerabilities/sqli/">
+  <label>Mã nhân viên (chỉ cho phép chữ và số, tối đa 10 ký tự)</label>
+  <input id="uid" name="id" maxlength="10" pattern="[A-Za-z0-9]+" required>
+  <button type="submit">Gửi</button>
+</form>
+
+<script>
+// "Bảo mật" phía client: chặn ký tự đặc biệt.
+// Bấm F12 -> xoá listener này, hoặc chặn request bằng ZAP/Burp,
+// là payload SQLi đi thẳng tới server.
+document.getElementById('f').addEventListener('submit', function (e) {
+  var v = document.getElementById('uid').value;
+  if (!/^[A-Za-z0-9]+$/.test(v)) {
+    e.preventDefault();
+    alert('Đầu vào không hợp lệ: chỉ cho phép chữ và số.');
+  }
+});
+</script>

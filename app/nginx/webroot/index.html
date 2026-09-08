@@ -1,0 +1,15 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Lab Portal — Vulnerability Scanning Demo</title>
+<style>body{font-family:system-ui;max-width:720px;margin:3rem auto;line-height:1.6}
+code{background:#eee;padding:.1em .35em}</style>
+<h1>Lab Portal</h1>
+<p><strong>Chỉ dùng trong mạng host-only 172.16.50.0/24.</strong>
+Mọi dịch vụ dưới đây cố tình cấu hình sai để phục vụ bài thực hành rà quét lỗ hổng.</p>
+<ul>
+  <li><a href="/dvwa/">DVWA</a> — SAST / DAST / input validation</li>
+  <li><a href="/juice/">Juice Shop</a> — DAST hiện đại</li>
+  <li><a href="/backup/">/backup/</a> — thư mục backup (cố tình mở)</li>
+</ul>
+<p>Phản hồi của chính trang này <em>cố tình thiếu</em> CSP, HSTS, X-Frame-Options.
+Kiểm chứng: <code>curl -sI http://172.16.50.20/</code></p>

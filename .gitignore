@@ -1,0 +1,17 @@
+# Sinh lại được bằng gen_pii.py (seed cố định) — không commit dữ liệu PII giả
+data/seed/out/
+# Private key, dù là của cert lab
+data/tls/certs/
+# Đầu ra khi chạy
+evidence/
+reports/
+
+# --- không phải nội dung lab, không đẩy lên repo ---
+.remember/
+*.log
+.DS_Store
+__pycache__/
+*.pyc
+# file tạm truyền code vào VM
+lab.tgz
+*.tgz

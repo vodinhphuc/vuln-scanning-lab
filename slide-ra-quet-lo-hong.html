@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rà quét lỗ hổng — Host, Application &amp; Data</title>
+<!--
+  BỘ SLIDE THỰC HÀNH: RÀ QUÉT LỖ HỔNG
+  Một file duy nhất, không phụ thuộc Internet hay thư viện ngoài.
+  Mở bằng bất kỳ trình duyệt nào trên Windows, macOS hay Linux.
+
+  CÁCH SỬA NỘI DUNG
+    1. Sửa trực tiếp trong trình duyệt: nhấn E, gõ, rồi Ctrl+S để tải bản mới về.
+    2. Hoặc mở file này bằng trình soạn thảo văn bản và sửa phần HTML bên dưới.
+       Mỗi slide là một thẻ <section class="slide ...">.
+       Ghi chú người trình bày nằm trong <aside class="notes">.
+    3. Đổi màu, cỡ chữ: sửa các biến trong khối :root ở đầu phần <style>.
+
+  XUẤT PDF: Ctrl+P, chọn khổ ngang, bỏ header/footer, bật "Background graphics".
+-->
+<style>
+:root{
+  --dark:#141B24; --dark2:#1E2A36; --darker:#0F1720;
+  --light:#F5F7F8; --white:#fff;
+  --accent:#00A99D; --warn:#E08A2E; --crit:#C0392B; --ok:#4C8B4A; --blue:#4A7FB5;
+  --text:#1C2530; --muted:#6B7885; --line:#D9DFE3; --lb:#C9D3DA;
+  --serif:Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"SF Mono",Consolas,"Liberation Mono",Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#0a0e13;font-family:var(--sans);overflow:hidden}
+#stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.slide{
+  position:absolute;width:1280px;height:720px;padding:52px 60px;
+  background:var(--light);color:var(--text);display:none;flex-direction:column;
+  transform-origin:center center;box-shadow:0 8px 40px rgba(0,0,0,.5);
+}
+.slide.active{display:flex}
+.slide.dark,.slide.section,.slide.demo,.slide.title{background:var(--dark);color:#fff}
+.slide.demo{background:var(--dark2)}
+
+/* ---------- typography ---------- */
+h1{font-family:var(--serif);font-size:56px;line-height:1.1;margin-bottom:18px}
+h2{font-family:var(--serif);font-size:38px;line-height:1.15;margin-bottom:6px}
+.slide.dark h2,.slide.demo h2,.slide.section h2{color:#fff}
+h3{font-size:19px;margin-bottom:8px}
+h4.mini{font-size:17px;margin:14px 0 6px}
+h4.mini.accent{color:var(--accent)}
+p.sub{font-size:15px;color:var(--muted);margin-bottom:14px}
+.slide.demo p.sub{color:#9FB0BC}
+p.lead{font-size:21px;color:var(--accent);margin-bottom:14px}
+p.meta{font-size:14px;color:var(--muted);margin-top:auto}
+p.kicker{font-size:17px;color:var(--muted);margin-bottom:22px}
+p.big{font-family:var(--serif);font-size:34px;margin-bottom:16px}
+p.big.accent{color:var(--accent)}
+p.big .q{opacity:.95}
+p.note{font-size:14px;color:var(--muted);margin:12px 0}
+p.foot{font-size:13px;color:#9FB0BC;margin-top:12px}
+.slide.light p.foot{color:var(--muted)}
+p.foot.warn,p.sub.warn{color:var(--warn)}
+p.quoteline{font-size:19px;font-style:italic;font-weight:600;color:var(--accent);margin:14px 0}
+p.quoteline.center{text-align:center}
+ul{margin:8px 0 0 20px}
+li{font-size:15px;line-height:1.55;margin-bottom:6px}
+.slide.demo li,.slide.dark li{color:var(--lb)}
+code{font-family:var(--mono);font-size:.92em}
+
+/* ---------- chips / badges ---------- */
+.chip{position:absolute;top:44px;right:60px;background:var(--dark);color:var(--accent);
+  font-size:12px;font-weight:700;padding:8px 18px;border-radius:20px;letter-spacing:.4px}
+.badge{align-self:flex-start;background:var(--warn);color:var(--dark);font-size:13px;font-weight:700;
+  padding:8px 20px;border-radius:20px;margin-bottom:14px;letter-spacing:.4px}
+
+/* ---------- title & section ---------- */
+.slide.title{justify-content:center}
+.slide>*:last-child:not(.takeaway):not(.mech):not(.notes){margin-bottom:0}
+.slide.section{flex-direction:row;align-items:center;gap:32px}
+.secnum{width:104px;height:104px;border-radius:50%;background:var(--accent);color:var(--dark);
+  font-family:var(--serif);font-size:44px;font-weight:700;display:flex;align-items:center;
+  justify-content:center;flex:none}
+.slide.section p{color:var(--muted);font-size:17px;margin-top:8px}
+
+/* ---------- panels ---------- */
+.panel{background:var(--dark2);border-radius:8px;padding:20px 26px;font-size:16px;
+  color:#C9D3DA;line-height:1.6;margin-top:26px}
+.panel.light{background:var(--white);border:1px solid var(--line);color:var(--text);margin-top:16px}
+.panel.light h3{font-size:19px;margin-bottom:8px}
+.takeaway{background:var(--dark);color:#fff;border-radius:8px;padding:16px 24px;
+  font-size:15px;font-weight:600;line-height:1.5;margin-top:auto}
+
+/* ---------- cards ---------- */
+.cards{display:grid;gap:14px;margin-top:6px}
+.cards.cols-2{grid-template-columns:1fr 1fr}
+.cards.cols-3{grid-template-columns:repeat(3,1fr)}
+.card{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:18px 20px}
+.cards.dark .card{background:var(--dark);border-width:2px}
+.card p{font-size:14px;line-height:1.55;color:#3C4A56}
+.cards.dark .card p,.cards.dark .card li{color:var(--lb)}
+.card p.quote{font-style:italic;margin-top:8px;font-size:13.5px}
+.card p.tools{font-family:var(--mono);font-size:12.5px;color:var(--text);margin-top:8px}
+.cards.dark .card p.tools{color:var(--lb)}
+.card ul{margin-left:18px}
+.card li{font-size:13.5px}
+.b-accent{border-color:var(--accent)!important}.b-warn{border-color:var(--warn)!important}
+.b-crit{border-color:var(--crit)!important}.b-ok{border-color:var(--ok)!important}
+.b-blue{border-color:var(--blue)!important}.b-muted{border-color:var(--muted)!important}
+.c-accent{color:var(--accent)}.c-warn{color:var(--warn)}.c-crit{color:var(--crit)}
+.c-ok{color:var(--ok)}.c-blue{color:var(--blue)}.c-muted{color:var(--muted)}
+
+/* ---------- command box ---------- */
+pre.cmd{background:var(--darker);border:1px solid rgba(0,169,157,.4);border-radius:6px;
+  padding:16px 20px;font-family:var(--mono);font-size:14px;line-height:1.6;
+  color:#9FE8DF;white-space:pre-wrap;margin:6px 0 14px}
+
+/* ---------- mechanism strip ---------- */
+.mech{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;background:var(--darker);
+  border:1px solid #2E3D4A;border-radius:8px;padding:16px 20px;margin-top:auto}
+.slide.light .mech{background:var(--white);border-color:var(--line)}
+.mech h4{font-size:12px;color:var(--accent);margin-bottom:6px;letter-spacing:.3px}
+.mech p{font-size:12px;line-height:1.5;color:#AEBCC6}
+.slide.light .mech p{color:#3C4A56}
+
+/* ---------- agenda ---------- */
+.agenda{margin-top:14px}
+.arow{display:flex;align-items:center;gap:16px;padding:11px 0;border-bottom:1px solid var(--line)}
+.arow:last-child{border-bottom:none}
+.num{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-family:var(--serif);
+  font-size:18px;font-weight:700;flex:none}
+.num.muted{background:var(--muted)}
+.arow>div{flex:1}
+.arow b{font-size:17px;display:block}
+.arow small{font-size:13px;color:var(--muted)}
+.dur{font-size:13px;font-weight:700;color:var(--accent)}
+
+/* ---------- flow ---------- */
+.flow{display:flex;align-items:stretch;gap:4px;margin:18px 0 8px}
+.step{flex:1;background:var(--white);border:1px solid var(--line);border-radius:8px;
+  padding:12px 8px;text-align:center}
+.step.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.step b{display:block;font-size:13px;margin-bottom:5px}
+.step small{font-size:10.5px;color:var(--muted);line-height:1.35;display:block}
+.step.hot small{color:#DFF6F3}
+.arrow{align-self:center;color:var(--muted);font-size:20px}
+
+/* ---------- pairs ---------- */
+.pairs{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+.pairs>div{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+.pairs b{font-size:13px;display:block;margin-bottom:4px}
+.pairs small{font-size:11.5px;color:var(--muted);line-height:1.45}
+
+/* ---------- tier grid ---------- */
+.tiergrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 14px;margin-top:10px}
+.th{font-size:12.5px;font-weight:700;text-align:center;padding-bottom:2px}
+.rowlabel{grid-column:1/-1;font-size:11.5px;font-weight:700;margin-top:8px}
+.tcell{background:var(--white);border:1px solid;border-radius:6px;padding:11px 14px}
+.tcell code{font-size:12px;line-height:1.5;display:block;color:var(--text)}
+
+/* ---------- tables ---------- */
+table{width:100%;border-collapse:separate;border-spacing:0 6px;margin-top:8px}
+th{font-size:12px;color:var(--muted);text-align:left;font-weight:700;padding:0 14px 4px}
+td{background:var(--white);border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:12px 14px;font-size:13.5px;vertical-align:middle}
+td:first-child{border-left:1px solid var(--line);border-radius:6px 0 0 6px}
+td:last-child{border-right:1px solid var(--line);border-radius:0 6px 6px 0}
+table.map td:nth-child(2) code{color:var(--accent);font-size:12.5px}
+table.matrix th{text-align:center}
+table.matrix td:not(:first-child){text-align:center;font-size:17px;font-weight:700}
+table.matrix .ok{color:var(--ok)}table.matrix .no{color:#C7CFD4}table.matrix .pt{color:var(--warn)}
+table.matrix tr.hot td{background:#FBEAE7;border-color:var(--crit)}
+table.matrix tr.hot td:first-child{font-weight:700}
+
+/* ---------- stats ---------- */
+.stats{display:grid;gap:16px;margin:6px 0 14px}
+.stats.two{grid-template-columns:1fr 1fr}
+.stats.three{grid-template-columns:repeat(3,1fr)}
+.stat{border:2px solid;border-radius:8px;padding:14px 20px;text-align:center}
+.stat b{display:block;font-family:var(--serif);font-size:40px;line-height:1.2}
+.stat small{font-size:12.5px;display:block}
+.stat em{display:block;font-style:normal;font-size:11.5px;color:#9FB0BC;line-height:1.45;margin-top:6px;text-align:left}
+.stat.crit{background:#2A1E1E;border-color:var(--crit)}.stat.crit b{color:var(--crit)}.stat.crit small{color:#E8A9A2}
+.stat.ok{background:#17281C;border-color:var(--ok)}.stat.ok b{color:var(--ok)}.stat.ok small{color:#AFD3AC}
+.stat.acc{background:var(--dark);border-color:var(--accent)}.stat.acc b{color:var(--accent)}.stat.acc small{color:#9FB0BC}
+.stat.warn{background:var(--dark);border-color:var(--warn)}.stat.warn b{color:var(--warn)}.stat.warn small{color:#9FB0BC}
+.stat.plain{background:var(--dark);border-color:var(--muted)}.stat.plain b{color:var(--muted)}.stat.plain small{color:#fff}
+.stats.two .stat.acc,.stats.two .stat.plain{text-align:left}
+.stats.two .stat.acc b,.stats.two .stat.plain b{font-size:30px}
+.stats.three .stat b{font-size:34px;letter-spacing:2px}
+
+/* ---------- alert ---------- */
+.alert{background:#2A1E1E;border:2px solid var(--crit);border-radius:8px;padding:14px 22px;margin-bottom:14px}
+.alert b{display:block;font-size:14px;color:#E8A9A2;margin-bottom:8px}
+.alert code{font-family:var(--mono);font-size:15px;color:#FFB3AB}
+
+/* ---------- chain ---------- */
+.chain{display:flex;align-items:stretch;gap:6px;margin:6px 0 12px}
+.chain .ch{flex:1;background:var(--dark);border:2px solid;border-radius:8px;padding:14px 16px}
+.chain .ch.acc{border-color:var(--accent)}.chain .ch.warn{border-color:var(--warn)}.chain .ch.ok{border-color:var(--ok)}
+.chain span{display:inline-flex;width:30px;height:30px;border-radius:50%;align-items:center;
+  justify-content:center;font-family:var(--serif);font-weight:700;color:var(--dark);margin-right:8px}
+.chain .ch.acc span{background:var(--accent)}.chain .ch.warn span{background:var(--warn)}.chain .ch.ok span{background:var(--ok)}
+.chain b{font-size:15px;color:#fff}
+.chain p{font-size:12.5px;color:#9FB0BC;margin-top:8px;line-height:1.5}
+.chain i{align-self:center;color:var(--muted);font-size:22px;font-style:normal}
+
+/* ---------- misc lists ---------- */
+.vslist>div{display:flex;align-items:center;background:var(--white);border:1px solid var(--line);
+  border-radius:6px;padding:10px 16px;margin-bottom:7px}
+.vslist b{flex:0 0 42%;font-size:13.5px}
+.vslist span{color:var(--muted);margin:0 14px}
+.vslist i{font-style:normal;color:var(--crit);font-size:13.5px}
+.sensors>div{display:flex;align-items:center;gap:14px;background:var(--white);
+  border:1px solid var(--line);border-radius:8px;padding:13px 18px;margin-bottom:9px}
+.dot{width:14px;height:14px;border-radius:50%;flex:none}
+.d-accent{background:var(--accent)}.d-warn{background:var(--warn)}.d-crit{background:var(--crit)}
+.sensors b{flex:0 0 24%;font-size:15px}
+.sensors code{flex:0 0 30%;font-size:12.5px}
+.sensors i{font-style:normal;font-size:12.5px;color:#3C4A56}
+.ctrls>div{display:flex;align-items:center;background:var(--white);border:1px solid var(--line);
+  border-radius:6px;padding:10px 16px;margin-bottom:8px}
+.ctrls span{background:var(--accent);color:#fff;font-size:12px;font-weight:700;padding:6px 0;
+  border-radius:14px;width:120px;text-align:center;flex:none;margin-right:16px}
+.ctrls p{font-size:13.5px;color:#3C4A56}
+.evo>div{display:flex;align-items:center;margin-bottom:8px}
+.evo i{flex:0 0 40%;font-style:normal;font-size:13.5px;color:var(--muted)}
+.evo span{color:var(--accent);margin:0 14px}
+.evo b{flex:1;background:var(--white);border:1px solid var(--accent);border-radius:6px;
+  padding:9px 16px;font-size:13.5px}
+.funnel{margin:14px 0 6px}
+.fb{margin:0 auto 9px;border-radius:6px;padding:11px 20px;color:#fff;font-size:13.5px;font-weight:600}
+.fb.l0{background:var(--muted)}.fb.l1{background:#8A97A2}.fb.l2{background:var(--warn)}
+.fb.l3{background:#D06A34}.fb.l4{background:var(--crit)}
+.finals{margin-top:26px}
+.finals>div{display:flex;gap:18px;margin-bottom:24px}
+.finals span{width:42px;height:42px;border-radius:50%;background:var(--accent);color:var(--dark);
+  display:flex;align-items:center;justify-content:center;font-family:var(--serif);
+  font-size:20px;font-weight:700;flex:none}
+.finals b{font-size:20px;color:#fff;display:block;margin-bottom:5px}
+.finals p{font-size:14.5px;color:#9FB0BC;line-height:1.5}
+.qa{margin-top:16px}
+.qa>div{background:var(--dark2);border-radius:8px;padding:13px 22px;margin-bottom:11px}
+.qa b{font-size:15px;color:var(--accent);display:block;margin-bottom:4px}
+.qa p{font-size:13.5px;color:#C9D3DA}
+.appendix{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:8px}
+.appendix h4{font-size:12.5px;margin-bottom:8px}
+.ai{margin-bottom:7px}
+.ai code{font-size:11px;font-weight:700;display:block;color:var(--text)}
+.ai small{font-size:11px;color:var(--muted);line-height:1.35}
+
+/* ---------- runtime chrome ---------- */
+.notes{display:none}
+#notesbar{position:fixed;left:0;right:0;bottom:0;max-height:26vh;overflow:auto;
+  background:#0b1016;color:#B9C6D0;border-top:1px solid #263442;padding:14px 22px;
+  font-size:14px;line-height:1.6;z-index:40}
+#notesbar.hidden{display:none}
+#bar{position:fixed;left:0;bottom:0;height:3px;background:var(--accent);z-index:50;transition:width .2s}
+#hud{position:fixed;right:14px;bottom:12px;color:#5d6b78;font-size:12px;z-index:50;
+  font-family:var(--mono);user-select:none}
+#help{position:fixed;inset:0;background:rgba(8,12,17,.94);color:#C9D3DA;z-index:60;
+  display:none;align-items:center;justify-content:center}
+#help.on{display:flex}
+#help div{max-width:620px;font-size:15px;line-height:2}
+#help kbd{background:#1E2A36;border:1px solid #33424f;border-radius:4px;padding:2px 9px;
+  font-family:var(--mono);font-size:13px;color:#fff;margin-right:10px}
+#help h3{color:var(--accent);font-size:20px;margin-bottom:14px}
+body.editing .slide{outline:2px dashed var(--warn);outline-offset:-6px}
+#editflag{position:fixed;left:14px;bottom:12px;color:var(--warn);font-size:12px;
+  font-family:var(--mono);z-index:50;display:none}
+body.editing #editflag{display:block}
+
+/* ---------- overview ---------- */
+body.overview #stage{display:block;overflow:auto;padding:26px}
+body.overview .slide{display:flex!important;position:relative;margin:0 auto 18px;
+  transform:scale(.34);transform-origin:top center;height:250px;margin-bottom:-450px}
+body.overview .slide:last-child{margin-bottom:20px}
+body.overview #notesbar{display:none}
+
+/* ---------- print ---------- */
+@media print{
+  @page{size:1280px 720px;margin:0}
+  html,body{overflow:visible;background:#fff;height:auto}
+  #stage{position:static;display:block}
+  .slide{display:flex!important;position:relative;page-break-after:always;
+    box-shadow:none;transform:none!important;margin:0}
+  #bar,#hud,#notesbar,#help,#editflag{display:none!important}
+}
+</style>
+</head>
+<body>
+<div id="stage">
+<section class="slide title">
+  <h1>Rà quét lỗ hổng</h1>
+  <p class="lead">Thực hành trên ba tầng: Host &middot; Application &middot; Data</p>
+  <p class="meta">Môn An ninh mạng — Chương trình cao học &nbsp;|&nbsp; Nhóm trình bày: [tên nhóm] &nbsp;|&nbsp; [ngày]</p>
+  <aside class="notes">Gioi thieu nhom, thoi luong, va noi ro day la buoi THUC HANH noi tiep phan ly thuyet Chapter 4 cua nhom truoc.</aside>
+</section>
+<section class="slide dark">
+  <p class="kicker">Nhóm trước đã trình bày Chương 4</p>
+  <p class="big">Chương 4 trả lời: <span class="q">"Cần bảo vệ những gì"</span></p>
+  <p class="big accent">Buổi này trả lời: <span class="q">"Làm sao biết mình chưa bảo vệ được"</span></p>
+  <div class="panel">Rà quét lỗ hổng chính là <b>hàm verification</b> cho từng security control mà Chương 4 nêu ra.<br>Mỗi công cụ hôm nay đều được neo vào một slide cụ thể của nhóm trước.</div>
+  <aside class="notes">Luan diem trung tam. Nhan manh: khong lap lai ly thuyet cua nhom truoc, ma kiem chung no bang cong cu thuc te.</aside>
+</section>
+<section class="slide light">
+  <h2>Nội dung buổi thực hành</h2>
+  <div class="agenda"><div class="arow"><span class="num muted">1</span><div><b>Nền tảng khái niệm</b><small>Lỗ hổng là gì, hai loại rà quét, bộ công cụ, vòng đời quản lý lỗ hổng</small></div><span class="dur">10 phút</span></div><div class="arow"><span class="num">2</span><div><b>Tầng HOST</b><small>Baseline, hardening, patch management, antimalware</small></div><span class="dur">12 phút</span></div><div class="arow"><span class="num">3</span><div><b>Tầng APPLICATION</b><small>Config, dependency, mã nguồn, runtime — bốn ống kính</small></div><span class="dur">14 phút</span></div><div class="arow"><span class="num">4</span><div><b>Tầng DATA</b><small>Ba trạng thái dữ liệu: at rest, in transit, in use</small></div><span class="dur">14 phút</span></div><div class="arow"><span class="num">5</span><div><b>Tổng hợp</b><small>Validation, ưu tiên xử lý, khắc phục, và những gì đã thay đổi</small></div><span class="dur">10 phút</span></div></div>
+
+  <aside class="notes">Neu chi co 30 phut: bo Demo EICAR, fuzzing va physical checklist; giu lai bat goi plaintext va bypass client-side validation.</aside>
+</section>
+<section class="slide light">
+  <h2>Phạm vi và nguyên tắc thực hiện</h2>
+  <p class="sub">Scope &amp; Rules of Engagement</p>
+  <div class="cards cols-2 "><div class="card b-ok"><h3 class="c-ok">Được phép trong buổi này</h3><ul><li>Chỉ quét tài sản do chính nhóm dựng</li><li>Toàn bộ VM nằm trong mạng host-only 192.168.56.0/24</li><li>Không kết nối Internet trong lúc demo</li><li>Dữ liệu cá nhân trong lab là dữ liệu bịa hoàn toàn</li><li>Có snapshot trước mỗi giai đoạn</li></ul></div><div class="card b-crit"><h3 class="c-crit">Không thực hiện</h3><ul><li>Không quét hệ thống của trường hay bên thứ ba</li><li>Không quét thiết bị SCADA/ICS thật — active scan có thể làm treo PLC</li><li>Không dùng dữ liệu thật của bất kỳ ai</li><li>Không khai thác sâu — đây là rà quét, không phải penetration test</li></ul></div></div>
+  <div class="takeaway">Rà quét lỗ hổng không có sự cho phép bằng văn bản là hành vi vi phạm pháp luật, kể cả khi không gây thiệt hại.</div>
+
+  <aside class="notes">Slide bat buoc. Nhan manh khia canh phap ly va dao duc nghe nghiep truoc khi chay bat ky lenh nao.</aside>
+</section>
+<section class="slide section">
+  <div class="secnum">1</div>
+  <div><h2>Nền tảng khái niệm</h2><p>Dành cho người mới — ba khái niệm, hai loại rà quét, một vòng đời</p></div>
+  <aside class="notes">Phan nay danh cho nguoi it kien thuc. Ai da biet roi thi coi nhu on lai.</aside>
+</section>
+<section class="slide light">
+  <h2>Ba khái niệm rất hay bị dùng lẫn</h2>
+  <div class="cards cols-3 "><div class="card b-accent"><h3 class="c-accent">Vulnerability</h3><p>Điểm yếu tồn tại trong hệ thống.<br><br>Ví dụ: một thư viện chưa được vá, một cấu hình sai.</p></div><div class="card b-warn"><h3 class="c-warn">Exploit</h3><p>Đoạn mã hoặc kỹ thuật khai thác điểm yếu đó.<br><br>Có lỗ hổng chưa chắc đã có exploit công khai.</p></div><div class="card b-crit"><h3 class="c-crit">Finding</h3><p>Một dòng kết quả mà scanner báo ra.<br><br>Chưa chắc là lỗ hổng thật — cần kiểm chứng.</p></div></div>
+  <h4 class="mini">Vì sao phải phân biệt?</h4>
+  <ul class=""><li>Một báo cáo có 500 finding không có nghĩa hệ thống có 500 lỗ hổng</li><li>Cũng không có nghĩa hệ thống có thể bị tấn công theo 500 cách</li><li>Khoảng cách giữa ba khái niệm này chính là công việc của người phân tích</li></ul>
+  <div class="takeaway">Scanner tạo ra Finding. Con người biến Finding thành kết luận về rủi ro.</div>
+
+  <aside class="notes">Cau hoi de bat dau: 'Theo cac ban, quet ra 500 CVE thi he thong te den muc nao?'</aside>
+</section>
+<section class="slide light">
+  <h2>Vòng đời quản lý lỗ hổng</h2>
+  <div class="flow"><div class="step"><b>Asset<br>discovery</b><small>Có những gì<br>trong mạng?</small></div><span class="arrow">›</span><div class="step"><b>Scanning</b><small>Rà quét<br>tự động</small></div><span class="arrow">›</span><div class="step hot"><b>Validation</b><small>Cái nào<br>thật?</small></div><span class="arrow">›</span><div class="step"><b>Prioritization</b><small>Vá cái nào<br>trước?</small></div><span class="arrow">›</span><div class="step"><b>Remediation</b><small>Khắc phục</small></div><span class="arrow">›</span><div class="step hot"><b>Verification<br>scan</b><small>Quét lại<br>để xác nhận</small></div></div>
+  <h4 class="mini accent">Hai bước tô đậm là hai bước hay bị bỏ nhất</h4>
+  <ul class=""><li>Bỏ Validation → báo cáo đầy false positive, đội vận hành mất niềm tin vào công cụ</li><li>Bỏ Verification scan → không ai biết bản vá có thực sự hiệu lực hay không</li><li>Buổi hôm nay sẽ đi đủ cả sáu bước, không dừng ở bước Scanning</li></ul>
+  <div class="takeaway">Rà quét chỉ là một bước trong sáu. Xuất báo cáo xong không phải là kết thúc công việc.</div>
+
+  <aside class="notes">Rat nhieu bai thuc hanh chi dung o buoc 2. Diem khac biet cua nhom minh la di het 6 buoc.</aside>
+</section>
+<section class="slide light">
+  <h2>Hai loại rà quét — và ba cặp khái niệm đối lập</h2>
+  <p class="sub">Khung phân loại này áp dụng cho cả ba tầng Host, Application và Data</p>
+  <div class="cards cols-2 "><div class="card b-accent"><h3 class="c-accent">Rà quét CẤU HÌNH</h3><p>Đối chiếu với một checklist chuẩn do cộng đồng hoặc tổ chức ban hành.</p><p class="quote c-accent">"Hệ thống có được cấu hình đúng chuẩn không?"</p><p class="tools">CIS Benchmark · DISA STIG · OWASP ASVS</p></div><div class="card b-warn"><h3 class="c-warn">Rà quét LỖ HỔNG</h3><p>Đối chiếu phiên bản thành phần với cơ sở dữ liệu lỗ hổng đã công bố.</p><p class="quote c-warn">"Thứ đang chạy có CVE đã biết không?"</p><p class="tools">NVD · CVE · vendor advisory</p></div></div>
+  <p class="note">Cùng một tầng thường cần cả hai. Ví dụ ở tầng Host: OpenSCAP chấm cấu hình, Greenbone tìm CVE — hai câu hỏi khác nhau.</p>
+  <div class="pairs"><div><b>Authenticated ↔ Unauthenticated</b><small>Scanner có được cấp credential để nhìn từ bên trong hay không</small></div><div><b>Active ↔ Passive</b><small>Gửi gói tin can thiệp, hay chỉ quan sát — lý do không quét chủ động vào ICS</small></div><div><b>Pre-deploy ↔ Runtime</b><small>Quét trước khi triển khai, hay quét hệ thống đang chạy</small></div></div>
+  <div class="takeaway">Mỗi tầng có bộ công cụ riêng, nhưng đều quy về hai câu hỏi này. Ba cặp đối lập quyết định phép quét thấy được bao nhiêu — và có an toàn để chạy hay không.</div>
+
+  <aside class="notes">Khung chung cho ca ba tang. Cap Active/Passive dan vao canh bao khong quet ICS o phan Host, va tcpdump la passive o phan Data.</aside>
+</section>
+<section class="slide light">
+  <h2>Bộ công cụ dùng trong buổi này</h2>
+  <p class="sub">Xếp theo đúng khung vừa nói — mỗi tầng đều cần cả hai loại rà quét, cộng thêm nhóm công cụ chỉ để quan sát</p>
+  <div class="tiergrid"><div class="th">TẦNG HOST</div><div class="th">TẦNG APPLICATION</div><div class="th">TẦNG DATA</div><div class="rowlabel c-accent">Đối chiếu với CHUẨN CẤU HÌNH</div><div class="tcell b-accent"><code>OpenSCAP + CIS Benchmark<br>Lynis</code></div><div class="tcell b-accent"><code>trivy config<br>nikto · curl -I</code></div><div class="tcell b-accent"><code>bucket policy MinIO<br>lsblk · cryptsetup status</code></div><div class="rowlabel c-warn">Đối chiếu với TRI THỨC VỀ LỖ HỔNG — CVE, rule, payload</div><div class="tcell b-warn"><code>Greenbone / OpenVAS<br>(unauth và authenticated)</code></div><div class="tcell b-warn"><code>syft + grype · trivy image<br>semgrep · OWASP ZAP</code></div><div class="tcell b-warn"><code>testssl.sh<br>NSE mongodb-info, redis-info</code></div><div class="rowlabel c-muted">QUAN SÁT và KIỂM CHỨNG — công cụ không mang sẵn tri thức</div><div class="tcell b-muted"><code>nmap · ss -tulpn<br>ClamAV + EICAR</code></div><div class="tcell b-muted"><code>Burp / DevTools · ffuf</code></div><div class="tcell b-muted"><code>tcpdump · Wireshark<br>gitleaks · ps · /proc</code></div></div>
+  <div class="takeaway">Hàng thứ ba là nhóm không tự kết luận được gì — nmap, tcpdump, ffuf chỉ đưa dữ liệu thô, còn diễn giải là việc của người phân tích.</div>
+
+  <aside class="notes">Slide ban do. Chieu nhanh 45 giay, khong doc het ten cong cu.</aside>
+</section>
+<section class="slide light">
+  <h2>Rà quét lỗ hổng ≠ Kiểm thử xâm nhập</h2>
+  <div class="cards cols-2 "><div class="card b-accent"><h3 class="c-accent">Vulnerability Scanning</h3><ul><li>Tự động, chạy được thường xuyên</li><li>Diện rộng — hàng trăm máy</li><li>Dừng ở mức phát hiện</li><li>Chi phí thấp, lặp lại được</li><li>Chỉ tìm được lỗ hổng đã biết</li></ul></div><div class="card b-muted"><h3 class="c-muted">Penetration Testing</h3><ul><li>Do con người thực hiện</li><li>Chiều sâu — vài mục tiêu</li><li>Khai thác thật, ghép chuỗi tấn công</li><li>Chi phí cao, làm định kỳ</li><li>Tìm được cả lỗi logic nghiệp vụ</li></ul></div></div>
+  <div class="takeaway">Rà quét là bước sàng lọc trước pentest. Làm tốt bước này thì pentest mới đáng đồng tiền.</div>
+
+  <aside class="notes">Cau hoi thuong gap nhat tu nguoi moi. Tra loi som de tranh bi ngat giua demo.</aside>
+</section>
+<section class="slide light">
+  <h2>Mô hình lab</h2>
+  <div class="cards cols-3 "><div class="card b-accent"><h3 class="c-accent">VM Scanner</h3><p>nmap · Greenbone · ZAP · Semgrep<br>testssl · tcpdump · Trivy · Syft</p><p class="tools">Kali Linux · 192.168.56.10</p></div><div class="card b-warn"><h3 class="c-warn">VM Target Linux</h3><p>Mục tiêu tầng Host<br>+ Docker cho tầng App và Data</p><p class="tools">Ubuntu 22.04 · 192.168.56.20</p></div><div class="card b-blue"><h3 class="c-blue">VM Target Windows</h3><p>Security template<br>và Group Policy</p><p class="tools">Windows · 192.168.56.30</p></div></div>
+  <p class="note">Mạng host-only, không NAT ra Internet trong lúc demo. Snapshot trước mỗi giai đoạn.</p>
+  <ul class=""><li>Tầng Host chạy trên máy ảo thật — lý do sẽ giải thích ở phần sau</li><li>Tầng Application và Data chạy bằng container bên trong VM Target</li></ul>
+  <div class="takeaway">Toàn bộ mục tiêu đều do nhóm tự dựng và cố tình để lỗ hổng, nhằm có "đáp án" để đối chiếu kết quả quét.</div>
+
+  <aside class="notes">Nho co danh sach lo hong tu tao (ground truth), nhom moi tinh duoc false negative o cuoi bai.</aside>
+</section>
+<section class="slide section">
+  <div class="secnum">2</div>
+  <div><h2>Tầng HOST</h2><p>Baseline &middot; Hardening &middot; Patch management &middot; Antimalware</p></div>
+  <aside class="notes">Doi chieu voi slide 20-33 cua nhom truoc.</aside>
+</section>
+<section class="slide light">
+<div class="chip">TẦNG HOST</div>
+  <h2>Chương 4 nói gì — và ta kiểm chứng bằng gì</h2>
+  <table class="map"><thead><tr><th>Khái niệm trong Chương 4</th><th>Công cụ rà quét</th><th>Bằng chứng thu được</th></tr></thead><tbody><tr><td><b>Host software baselining</b></td><td><code>OpenSCAP + CIS Benchmark, Lynis</code></td><td>Compliance score, danh sách rule fail</td></tr><tr><td><b>Loại bỏ service thừa, bật firewall</b></td><td><code>nmap -sV, ss -tulpn</code></td><td>Danh sách service đang listen</td></tr><tr><td><b>Implement patch management</b></td><td><code>Greenbone authenticated scan</code></td><td>Missing patch và CVE</td></tr><tr><td><b>Deploy &amp; manage settings</b></td><td><code>Ansible / oscap --remediate</code></td><td>Score trước và sau</td></tr><tr><td><b>Antimalware</b></td><td><code>ClamAV + EICAR test file</code></td><td>Chứng minh signature detection</td></tr></tbody></table>
+  <div class="takeaway">Mỗi dòng ở đây tương ứng với một slide cụ thể trong bài của nhóm trước.</div>
+
+  <aside class="notes">Chieu nhanh, khong doc het bang.</aside>
+</section>
+<section class="slide light">
+<div class="chip">TẦNG HOST</div>
+  <h2>Baseline và Hardening — hai từ khoá của tầng Host</h2>
+  <div class="cards cols-2 "><div class="card b-accent"><h3 class="c-accent">Baseline</h3><p>Cấu hình chuẩn mà mọi máy trong tổ chức phải đạt. Chính là khái niệm "host software baselining" ở Chương 4.</p></div><div class="card b-warn"><h3 class="c-warn">Hardening</h3><p>Quá trình siết cấu hình để tiến về baseline: tắt service thừa, đổi default, bật firewall.</p></div></div>
+  <div class="panel light"><h3>CIS Benchmark là đề bài — OpenSCAP là người chấm</h3><ul><li>CIS Benchmark: bộ checklist hardening, có bản riêng cho Ubuntu, Windows, Docker, Kubernetes, Nginx</li><li>SCAP: định dạng chuẩn để máy đọc được checklist đó — OpenSCAP chạy checklist và chấm ra điểm số</li></ul></div>
+  <div class="takeaway">Không có baseline thì không có gì để đối chiếu — và "an toàn" trở thành một cảm nhận thay vì một con số.</div>
+
+</section>
+<section class="slide demo">
+<div class="chip">TẦNG HOST</div>
+  <div class="badge">DEMO 1</div>
+  <h2>Asset discovery — có gì trong mạng?</h2>
+  <pre class="cmd">nmap -sn 192.168.56.0/24
+nmap -sV -sC -oA evidence/host-discovery 192.168.56.20</pre>
+  <ul class=""><li>Không thể bảo vệ thứ mình không biết là đang tồn tại</li><li>Kết quả cần chỉ ra: telnet, FTP, rpcbind đang chạy — đúng những service Chương 4 khuyên loại bỏ</li></ul>
+  <div class="mech"><div><h4>Nguồn tri thức</h4><p>Không có checklist. Chỉ có thư viện fingerprint <code>nmap-service-probes</code> đi kèm công cụ, và script NSE viết bằng Lua.</p></div><div><h4>Quét thực chất là</h4><p>Gửi gói TCP SYN tới từng cổng: nhận SYN/ACK là mở, RST là đóng, im lặng là bị lọc. Với <code>-sV</code> thì bắt tay đầy đủ rồi so banner với fingerprint.</p></div><div><h4>Vì sao có thể sai</h4><p>Banner có thể bị sửa hoặc tắt. Firewall làm cổng mở trông như bị lọc. Phiên bản là suy đoán từ chuỗi banner, không phải sự thật.</p></div></div>
+
+  <aside class="notes">Chay live, khoang 90 giay. Chi cho lop thay ro dong telnet va ftp. Dien ket qua that vao bao cao.</aside>
+</section>
+<section class="slide demo">
+<div class="chip">TẦNG HOST</div>
+  <div class="badge">DEMO 2</div>
+  <h2>Chấm điểm baseline bằng OpenSCAP</h2>
+  <pre class="cmd">sudo oscap xccdf eval --profile cis_level1_server \
+  --report evidence/openscap-before.html /usr/share/xml/scap/.../ssg-ubuntu2204-ds.xml</pre>
+  <div class="stats two"><div class="stat crit"><small>TRƯỚC hardening</small><b>___%</b></div><div class="stat ok"><small>SAU hardening</small><b>___%</b></div></div>
+  <div class="mech"><div><h4>Baseline lấy ở đâu</h4><p>Gói <code>scap-security-guide</code> cài sẵn trên máy. Bên trong là file datastream <code>ssg-ubuntu2204-ds.xml</code> do dự án ComplianceAsCode phát hành, đóng gói nội dung CIS Benchmark.</p></div><div><h4>Quét thực chất là</h4><p>File chứa XCCDF (danh sách rule và profile) cùng OVAL (mô tả máy đọc được cách kiểm tra từng rule). Với mỗi rule, OpenSCAP đọc file cấu hình, hỏi package manager, đọc sysctl rồi so trạng thái thật với trạng thái mong đợi.</p></div><div><h4>Lưu ý</h4><p>Hoàn toàn cục bộ — không gửi gói tin nào ra mạng. Score là tỷ lệ rule pass có trọng số, nên đổi profile là đổi điểm dù máy không đổi.</p></div></div>
+  <p class="foot">Đây là bước Remediation và Verification scan trong vòng đời — không dừng ở phát hiện.</p>
+
+  <aside class="notes">Chuan bi 2 snapshot: host-vuln va host-hardened, de chuyen qua lai ngay lap tuc thay vi cho Ansible chay.</aside>
+</section>
+<section class="slide demo">
+<div class="chip">TẦNG HOST</div>
+  <div class="badge">DEMO 3</div>
+  <h2>Quét có đăng nhập và quét không đăng nhập</h2>
+  <p class="sub">Cùng một máy đích, cùng một công cụ — chỉ khác ở chỗ có cung cấp credential hay không</p>
+  <div class="stats two"><div class="stat plain"><small>Unauthenticated</small><b>___ findings</b><em>Phát hiện version qua banner rồi so với khoảng version dính CVE — tức là suy luận, không khai thác</em></div><div class="stat acc"><small>Authenticated</small><b>___ findings</b><em>Đăng nhập SSH, chạy <code>dpkg -l</code> lấy danh sách package chính xác, đối chiếu security advisory của distro</em></div></div>
+  <div class="mech"><div><h4>Nguồn tri thức</h4><p>NVT feed — hàng chục nghìn script NASL đồng bộ từ Greenbone Community Feed, mỗi script gắn với một hoặc nhiều CVE. Đây là thứ mất 1–3 tiếng để tải về lần đầu.</p></div><div><h4>Quét thực chất là</h4><p>Dò cổng và service trước, rồi với mỗi service chạy những NVT phù hợp. Phần lớn NVT chỉ so khớp phiên bản; một số ít gửi probe an toàn để kiểm tra hành vi. Scanner không khai thác lỗ hổng.</p></div><div><h4>Vì sao có thể sai</h4><p>Distro thường backport bản vá nhưng giữ nguyên chuỗi version. Scanner tưởng chưa vá và báo nhầm — false positive kinh điển sẽ demo ở phần Validation.</p></div></div>
+  <p class="foot warn">Một báo cáo "sạch" có thể chỉ nghĩa là scanner chưa được cho nhìn thấy đủ.</p>
+
+  <aside class="notes">Mot trong nhung con so an tuong nhat cua tang Host. Chuan bi san ca hai report.</aside>
+</section>
+<section class="slide light">
+<div class="chip">TẦNG HOST</div>
+  <h2>Vì sao tầng Host phải dùng máy ảo, không dùng container</h2>
+  <p class="sub">Container chia sẻ kernel với máy chủ và không có một hệ điều hành đầy đủ</p>
+  <div class="vslist"><div><b>CIS Benchmark, baselining</b><span>→</span><i>Phần lớn rule không áp dụng được</i></div><div><b>Firewall của host</b><span>→</span><i>Không có iptables/ufw riêng</i></div><div><b>Kernel, sysctl, bootloader</b><span>→</span><i>Dùng chung của máy chủ</i></div><div><b>SSH, PAM, cron, auditd</b><span>→</span><i>Thường không chạy</i></div><div><b>Patch management</b><span>→</span><i>Không patch — phải rebuild image</i></div><div><b>Disk encryption</b><span>→</span><i>Thuộc về host bên dưới</i></div></div>
+  <div class="takeaway">Thử nghiệm kèm theo: chạy Lynis hai lần — trên VM và trong container — rồi so số test thực thi được ở mỗi bên.</div>
+
+  <aside class="notes">Neu con thoi gian, chay live lenh so sanh so test cua Lynis. Rat thuyet phuc.</aside>
+</section>
+<section class="slide light">
+<div class="chip">TẦNG HOST</div>
+  <h2>Phần Chương 4 nói mà scanner không chạm tới được</h2>
+  <p class="sub">Physical security — slide 6 đến 19 của nhóm trước</p>
+  <div class="cards cols-2 "><div class="card b-muted"><h3 class="c-muted">Không có công cụ nào quét được</h3><p>Fencing, barricade, guards, CCTV<br>Hardware lock, cipher lock, key management<br>Proximity reader (RFID), access list<br>Mantrap<br>Protected Distribution System (PDS)<br>Cable lock, locking cabinet</p></div><div class="card b-accent"><h3 class="c-accent">Cách nhóm xử lý</h3><p>Chuyển thành audit checklist rút từ chính nội dung Chương 4, rồi chấm điểm cho phòng lab thật.<br><br>Đây là hình thức đánh giá thủ công — vẫn thuộc quy trình rà quét, chỉ khác công cụ.</p></div></div>
+  <div class="takeaway">Không phải mọi security control đều đo được bằng phần mềm. Biết giới hạn của công cụ là một phần của năng lực chuyên môn.</div>
+
+  <aside class="notes">Slide nay the hien nhom doc ky bai cua nhom truoc chu khong chi chay tool.</aside>
+</section>
+<section class="slide section">
+  <div class="secnum">3</div>
+  <div><h2>Tầng APPLICATION</h2><p>Bốn ống kính soi cùng một ứng dụng web</p></div>
+  <aside class="notes">Doi chieu slide 36-44 cua nhom truoc.</aside>
+</section>
+<section class="slide light">
+<div class="chip">TẦNG APP</div>
+  <h2>Bốn ống kính soi cùng một ứng dụng</h2>
+  <p class="sub">Ở tầng Application, hai loại rà quét ở Phần 1 tách thành bốn nhóm công cụ — mỗi nhóm nhìn vào một artifact khác nhau</p>
+  <div class="cards cols-2 "><div class="card b-accent"><h3 class="c-accent">Config</h3><p>Dockerfile, cấu hình Nginx, security header</p><p class="quote c-accent">"Kiểm tra cửa đã khóa chưa — không phải kiểm tra ổ khóa có bị lỗi không."</p><p class="tools">trivy config · nikto · curl -I</p></div><div class="card b-warn"><h3 class="c-warn">SCA</h3><p>Thư viện npm và PHP dependency</p><p class="quote c-warn">"Bạn viết 10% mã nguồn. 90% là thư viện tải về."</p><p class="tools">syft · grype · trivy image</p></div><div class="card b-blue"><h3 class="c-blue">SAST</h3><p>Mã nguồn PHP — không chạy ứng dụng</p><p class="quote c-blue">"Đọc bản thiết kế để tìm chỗ sai, chưa cần xây nhà."</p><p class="tools">semgrep</p></div><div class="card b-crit"><h3 class="c-crit">DAST</h3><p>Ứng dụng đang chạy, tấn công từ bên ngoài</p><p class="quote c-crit">"Thử mở từng cửa của ngôi nhà đã xây xong."</p><p class="tools">OWASP ZAP · ffuf · Burp/DevTools</p></div></div>
+  <div class="takeaway">SAST thấy code nhưng không thấy hành vi. DAST thấy hành vi nhưng không thấy code. SCA thấy thư viện. Config thấy cấu hình. Không cái nào thay thế cái nào.</div>
+  <p class="foot">Vì sao chọn DVWA: có nút View Source và chuyển được security level — xem được mã nguồn của chính lỗ hổng vừa quét ra, và cả bản đã vá của cùng hàm đó.</p>
+
+  <aside class="notes">Truc chinh cua tang Application. Bao truoc: cuoi phan nay se co ma tran chung minh bang so lieu that.</aside>
+</section>
+<section class="slide demo">
+<div class="chip">TẦNG APP</div>
+  <div class="badge">DEMO 4</div>
+  <h2>Application configuration baseline</h2>
+  <pre class="cmd">trivy config ./dvwa-build/
+nikto -h http://192.168.56.20:8080
+curl -sI http://192.168.56.20:8080 | grep -iE "content-security|strict-transport|x-frame"</pre>
+  <ul class=""><li>Thiếu CSP, HSTS, X-Frame-Options — trình duyệt không được lệnh siết bảo mật</li><li>Container chạy quyền root, base image dùng tag <code>:latest</code> không pin phiên bản</li></ul>
+  <div class="mech"><div><h4>Nguồn tri thức</h4><p><code>trivy config</code> dùng bộ rule trivy-checks viết bằng Rego (ngôn ngữ policy của OPA). <code>nikto</code> dùng database khoảng 7000 mục: đường dẫn nguy hiểm và file mặc định đã biết.</p></div><div><h4>Quét thực chất là</h4><p>trivy parse Dockerfile và manifest thành cấu trúc dữ liệu rồi chạy policy trên đó — không chạy container. nikto gửi lần lượt vài nghìn request và xét mã trả về. <code>curl -I</code> chỉ đọc header, hoàn toàn thụ động.</p></div><div><h4>Vì sao có thể sai</h4><p>nikto báo theo đường dẫn tồn tại chứ không xác minh khai thác được hay không, nên tỷ lệ báo nhầm cao. Rule policy không biết ngữ cảnh triển khai thật.</p></div></div>
+  <p class="foot warn">Ánh xạ slide 37 — "application configuration baseline"</p>
+
+</section>
+<section class="slide demo">
+<div class="chip">TẦNG APP</div>
+  <div class="badge">DEMO 5</div>
+  <h2>SBOM và SCA — quét thứ bạn không tự viết</h2>
+  <pre class="cmd">syft juice-shop:latest -o spdx-json > evidence/sbom.json
+grype sbom:evidence/sbom.json</pre>
+  <div class="stats three"><div class="stat acc"><b>___</b><small>thành phần trong SBOM</small></div><div class="stat warn"><b>___</b><small>CVE HIGH và CRITICAL</small></div><div class="stat crit"><b>___</b><small>trong đó đã có bản vá</small></div></div>
+  <div class="mech"><div><h4>Quét thực chất là</h4><p>Mở từng layer của image, tìm file kê khai package: <code>/var/lib/dpkg/status</code>, <code>package-lock.json</code>, <code>requirements.txt</code>, <code>go.sum</code>, <code>pom.xml</code>. Từ đó dựng danh sách tên và phiên bản. Không chạy ứng dụng, không gửi gói tin.</p></div><div><h4>CVE lấy ở đâu</h4><p>Database tải sẵn về máy bằng <code>trivy --download-db-only</code>, tổng hợp từ NVD, security advisory của từng distro, GitHub Security Advisory và OSV. Khớp theo định danh PURL/CPE và khoảng phiên bản bị ảnh hưởng.</p></div><div><h4>Vì sao báo thừa</h4><p>Không xét reachability: thư viện có mặt trong image không có nghĩa hàm dính lỗi được gọi tới. Đây là lý do con số CVE thô luôn lớn hơn nhiều so với việc thực sự phải làm.</p></div></div>
+  <p class="foot">SBOM tự nó không phải kết quả bảo mật — nó là đầu vào để đối chiếu với cơ sở dữ liệu lỗ hổng.</p>
+
+  <aside class="notes">Nhan manh: phan lon CVE nam trong dependency. Ket bang mot CVE cu the va duong nang cap.</aside>
+</section>
+<section class="slide demo">
+<div class="chip">TẦNG APP</div>
+  <div class="badge">DEMO 6</div>
+  <h2>Từ cảnh báo của scanner đến dòng code và bản vá</h2>
+  <div class="chain"><div class="ch acc"><span>1</span><b>Semgrep chỉ ra</b><p>File và số dòng có SQL nối chuỗi trực tiếp</p></div><i>›</i><div class="ch warn"><span>2</span><b>DVWA — level Low</b><p>Bấm View Source: đúng dòng code đó</p></div><i>›</i><div class="ch ok"><span>3</span><b>DVWA — Impossible</b><p>Cùng chức năng nhưng dùng prepared statement</p></div></div>
+  <p class="quoteline">Lọc dấu nháy đơn là bịt một cái lỗ. Prepared statement là làm cho cái lỗ không tồn tại.</p>
+  <div class="mech"><div><h4>Rule lấy ở đâu</h4><p>Semgrep Registry — các ruleset <code>p/owasp-top-ten</code>, <code>p/php</code> do cộng đồng và Semgrep viết. Rule được viết bằng chính cú pháp của ngôn ngữ đích, không phải regex.</p></div><div><h4>Quét thực chất là</h4><p>Parse mã nguồn thành cây cú pháp AST rồi so khớp mẫu trên cây. Chế độ taint theo dõi dữ liệu từ nguồn (<code>$_GET</code>) tới điểm nguy hiểm (<code>mysqli_query</code>) và báo nếu không đi qua hàm làm sạch.</p></div><div><h4>Vì sao có thể sai</h4><p>Không chạy chương trình nên không biết cấu hình runtime, không biết nhánh code đó có bao giờ được gọi tới hay không. Đổi lại, nó chỉ được chính xác file và số dòng.</p></div></div>
+  <p class="foot warn">Ánh xạ slide 38 (secure coding) và slide 41 (input validation) của nhóm trước</p>
+
+  <aside class="notes">Mo san 3 tab trinh duyet theo dung thu tu truoc khi bat dau.</aside>
+</section>
+<section class="slide demo">
+<div class="chip">TẦNG APP</div>
+  <div class="badge">DEMO 7</div>
+  <h2>DAST — tấn công ứng dụng đang chạy</h2>
+  <pre class="cmd">docker run --rm -v $(pwd):/zap/wrk owasp/zap2docker-stable \
+  zap-baseline.py -t http://192.168.56.20:8080 -r zap-report.html</pre>
+  <ul class=""><li>Baseline scan: thụ động, nhanh — dùng demo trực tiếp. Full scan: gửi payload thật, chạy trước ở nhà</li><li>Bắt buộc cấu hình authenticated context, nếu không scanner chỉ quét được trang đăng nhập</li></ul>
+  <div class="mech"><div><h4>Nguồn tri thức</h4><p>Không có checklist chuẩn. ZAP mang theo thư viện payload tấn công cho từng loại lỗ hổng, cộng với heuristic để đọc phản hồi.</p></div><div><h4>Quét thực chất là</h4><p>Spider bò khắp ứng dụng để tìm bề mặt trước. Sau đó với mỗi tham số phát hiện được — URL, form field, cookie, header — lần lượt chèn payload, gửi request, rồi so phản hồi với phản hồi gốc.</p></div><div><h4>Kết luận dựa vào đâu</h4><p>Thông báo lỗi CSDL lộ ra (SQLi), payload bị phản chiếu nguyên văn vào trang (XSS), độ trễ phản hồi tăng đúng khoảng thời gian chèn vào (blind SQLi), hoặc nội dung khác biệt giữa hai request.</p></div></div>
+  <p class="foot warn">Lỗi phổ biến nhất khi dùng DAST lần đầu: quên cấu hình session rồi kết luận nhầm rằng ứng dụng an toàn.</p>
+
+</section>
+<section class="slide demo">
+<div class="chip">TẦNG APP</div>
+  <div class="badge">DEMO 8</div>
+  <h2>Hai điều con người phải tự chứng minh</h2>
+  <div class="cards cols-2 dark"><div class="card b-warn"><h3 class="c-warn">Error handling làm lộ dữ liệu</h3><ul><li>Level Low: nhập một dấu nháy đơn → MySQL trả về lỗi lộ cú pháp truy vấn và thông tin backend</li><li>Level High: cùng thao tác → chỉ hiện thông báo lỗi chung chung</li><li>Ánh xạ slide 40 của nhóm trước</li></ul></div><div class="card b-crit"><h3 class="c-crit">Bypass client-side validation</h3><ul><li>Form chặn ký tự đặc biệt bằng JavaScript</li><li>Mở DevTools tắt JS, hoặc chặn và sửa request bằng ZAP/Burp</li><li>Payload không hợp lệ vẫn đi tới máy chủ — ánh xạ slide 42</li></ul></div></div>
+  <p class="quoteline">Mọi thứ chạy trên máy người dùng đều có thể bị sửa. Validation phía client là để trải nghiệm mượt, không phải để bảo mật.</p>
+
+  <aside class="notes">Mot trong ba khoanh khac an tuong nhat cua ca bai. Tap thao tac it nhat 5 lan.</aside>
+</section>
+<section class="slide light">
+<div class="chip">TẦNG APP</div>
+  <h2>Ma trận độ phủ — không lớp nào phủ hết</h2>
+  <table class="matrix"><thead><tr><th></th><th>Config</th><th>SCA</th><th>SAST</th><th>DAST</th><th>Thủ công</th></tr></thead><tbody><tr><td>Thiếu security header</td><td><span class="ok">✓</span></td><td><span class="no">✕</span></td><td><span class="no">✕</span></td><td><span class="ok">✓</span></td><td><span class="no">–</span></td></tr><tr><td>Dependency dính CVE</td><td><span class="no">✕</span></td><td><span class="ok">✓</span></td><td><span class="no">✕</span></td><td><span class="pt">~</span></td><td><span class="no">–</span></td></tr><tr><td>SQL injection trong code</td><td><span class="no">✕</span></td><td><span class="no">✕</span></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td><td><span class="ok">✓</span></td></tr><tr><td>Bypass client-side validation</td><td><span class="no">✕</span></td><td><span class="no">✕</span></td><td><span class="no">✕</span></td><td><span class="pt">~</span></td><td><span class="ok">✓</span></td></tr><tr><td>Container chạy quyền root</td><td><span class="ok">✓</span></td><td><span class="no">✕</span></td><td><span class="no">✕</span></td><td><span class="no">✕</span></td><td><span class="no">–</span></td></tr><tr class="hot"><td>Lỗi logic nghiệp vụ</td><td><span class="no">✕</span></td><td><span class="no">✕</span></td><td><span class="no">✕</span></td><td><span class="no">✕</span></td><td><span class="ok">✓</span></td></tr></tbody></table>
+  <div class="takeaway">Hàng cuối cùng không scanner nào chạm tới. Đó là lý do application security là một quy trình xuyên suốt vòng đời phát triển, không phải một sản phẩm.</div>
+
+  <aside class="notes">Dien so lieu that tu ket qua quet cua nhom. Slide chot cua tang Application.</aside>
+</section>
+<section class="slide section">
+  <div class="secnum">4</div>
+  <div><h2>Tầng DATA</h2><p>Ba trạng thái dữ liệu: at rest &middot; in transit &middot; in use</p></div>
+  <aside class="notes">Doi chieu slide 45-48 cua nhom truoc.</aside>
+</section>
+<section class="slide light">
+<div class="chip">TẦNG DATA</div>
+  <h2>Ba trạng thái dữ liệu — và cách rà quét từng trạng thái</h2>
+  <div class="cards cols-3 "><div class="card b-accent"><h3 class="c-accent">Data at rest</h3><p>Dữ liệu nằm yên trên đĩa, trong CSDL, trong bucket</p><p class="tools">Lynis kiểm tra LUKS<br>MongoDB/Redis no-auth<br>MinIO bucket policy<br>gitleaks, trufflehog</p></div><div class="card b-warn"><h3 class="c-warn">Data in transit</h3><p>Dữ liệu đang di chuyển trên đường truyền</p><p class="tools">testssl.sh<br>nmap ssl-enum-ciphers<br>tcpdump + Wireshark</p></div><div class="card b-crit"><h3 class="c-crit">Data in use</h3><p>Dữ liệu đang được xử lý trong bộ nhớ</p><p class="tools">ps aux<br>/proc/&lt;pid&gt;/environ<br>gcore + strings</p></div></div>
+  <div class="takeaway">Chương 4 nêu ba trạng thái. Phần này chứng minh cả ba đều rò rỉ được nếu không có control tương ứng.</div>
+
+</section>
+<section class="slide demo">
+<div class="chip">TẦNG DATA</div>
+  <div class="badge">DEMO 9</div>
+  <h2>Data at rest — nằm yên nhưng không khoá</h2>
+  <pre class="cmd">nmap -p 27017,6379,9000 --script mongodb-info,redis-info 192.168.56.20
+mongosh mongodb://192.168.56.20:27017        # khong can credential
+gitleaks detect --source ./app --report-path evidence/secrets.json</pre>
+  <ul class=""><li>MongoDB không bật auth và bind 0.0.0.0; bucket MinIO đặt policy public read</li><li>Connection string chứa mật khẩu bị hardcode trong mã nguồn và trong image layer</li></ul>
+  <div class="mech"><div><h4>Quét datastore thực chất là</h4><p>Script NSE kết nối tới cổng rồi gửi lệnh của chính giao thức đó — MongoDB <code>buildInfo</code>, Redis <code>INFO</code>. Nếu server trả lời mà không đòi credential thì kết luận là chưa bật xác thực.</p></div><div><h4>Tìm secret thực chất là</h4><p>gitleaks duyệt toàn bộ lịch sử git, không chỉ thư mục hiện tại, dùng bộ regex cho từng loại credential cộng với điểm entropy Shannon để bắt chuỗi ngẫu nhiên đáng ngờ.</p></div><div><h4>Vì sao regex chưa đủ</h4><p>Chuỗi entropy cao có thể chỉ là mã hash vô hại. trufflehog khác ở chỗ còn gọi API nhà cung cấp để xác minh key còn sống hay không, nên giảm mạnh false positive.</p></div></div>
+  <p class="foot warn">Dữ liệu trong lab là dữ liệu bịa hoàn toàn, không phải dữ liệu thật của bất kỳ ai.</p>
+
+</section>
+<section class="slide demo">
+<div class="chip">TẦNG DATA</div>
+  <div class="badge">DEMO 10</div>
+  <h2>Data in transit — mật khẩu bay qua mạng</h2>
+  <pre class="cmd">testssl.sh https://192.168.56.20
+sudo tcpdump -i ens33 -w evidence/plaintext.pcap port 8080</pre>
+  <div class="alert"><b>Wireshark → Follow HTTP Stream</b><code>username=admin&amp;password=•••••••••&nbsp;&nbsp;&nbsp;&nbsp; ← hiện nguyên văn trên màn hình</code></div>
+  <div class="mech"><div><h4>testssl.sh làm gì</h4><p>Mở hàng loạt kết nối liên tiếp, mỗi lần chào server bằng đúng một phiên bản giao thức hoặc một cipher suite cụ thể, ghi lại cái nào được chấp nhận để dựng bảng hỗ trợ. Sau đó kiểm tra chứng thư và probe riêng cho từng lỗ hổng giao thức.</p></div><div><h4>tcpdump làm gì</h4><p>Đặt card mạng ở chế độ nghe, kernel lọc gói bằng BPF rồi sao chép lên không gian người dùng. Hoàn toàn thụ động — không gửi gì và không để lại dấu vết nào trên máy đích.</p></div><div><h4>Ý nghĩa</h4><p>Đây chính là hai thái cực active và passive đã nói ở Phần 1, và là lý do tồn tại của DLP network sensor mà Chương 4 nhắc ở slide 48.</p></div></div>
+
+  <aside class="notes">Khoanh khac an tuong nhat cua ca bai. Luu san file pcap de du phong. Phong to font Wireshark truoc.</aside>
+</section>
+<section class="slide demo">
+<div class="chip">TẦNG DATA</div>
+  <div class="badge">DEMO 11</div>
+  <h2>Data in use — dữ liệu đang được xử lý cũng rò rỉ</h2>
+  <pre class="cmd">ps aux | grep -i pass          # mat khau nam tren command line
+sudo cat /proc/&lt;pid&gt;/environ | tr "\0" "\n" | grep -i -E "pass|token|key"
+sudo gcore &lt;pid&gt; &amp;&amp; strings core.&lt;pid&gt; | grep -i -E "password|secret"</pre>
+  <ul class=""><li>Mọi user trên máy đều đọc được tham số dòng lệnh của tiến trình khác</li><li>Biến môi trường chứa secret bị lộ qua <code>/proc</code> — rất phổ biến trong container</li><li>Dump bộ nhớ có thể tìm thấy chuỗi nhạy cảm mà mã hoá đĩa và TLS không bảo vệ được</li></ul>
+  <div class="takeaway">Mã hoá at rest và in transit không bảo vệ được data in use. Đây chính là lý do DLP cần agent sensor chạy ngay trên host.</div>
+
+</section>
+<section class="slide light">
+<div class="chip">TẦNG DATA</div>
+  <h2>DLP trong Chương 4 — thu nhỏ thành ba phép quét</h2>
+  <p class="sub">Ba loại sensor ở slide 48, ánh xạ sang những gì nhóm đã demo</p>
+  <div class="sensors"><div><span class="dot d-warn"></span><b>Network sensor</b><code>tcpdump / Wireshark</code><i>Quan sát dữ liệu trên đường truyền</i></div><div><span class="dot d-accent"></span><b>Storage sensor</b><code>Script quét file và MongoDB</code><i>Tìm dữ liệu nhạy cảm khi lưu trữ</i></div><div><span class="dot d-crit"></span><b>Agent sensor</b><code>ps aux, /proc/&lt;pid&gt;/environ</code><i>Quan sát ngay trên máy trạm</i></div></div>
+  <p class="note">Content inspection: script regex tìm số CCCD, số điện thoại, email trên filesystem và trong CSDL — bản thu nhỏ của kỹ thuật ở slide 47.</p>
+  <div class="takeaway">Nghị định 13/2023/NĐ-CP: mỗi phát hiện ở tầng này tương ứng với một nghĩa vụ bảo vệ dữ liệu cá nhân chưa được đáp ứng.</div>
+
+  <aside class="notes">Ket noi voi khung phap ly Viet Nam — diem cong ro rang o bac cao hoc.</aside>
+</section>
+<section class="slide section">
+  <div class="secnum">5</div>
+  <div><h2>Tổng hợp</h2><p>Kiểm chứng &middot; Ưu tiên &middot; Khắc phục &middot; Và những gì đã thay đổi</p></div>
+  <aside class="notes">Phan quan trong nhat ve mat diem so. Khong duoc cat neu thieu thoi gian.</aside>
+</section>
+<section class="slide light">
+  <h2>Kiểm chứng — không phải finding nào cũng là lỗ hổng</h2>
+  <div class="cards cols-2 "><div class="card b-warn"><h3 class="c-warn">False Positive</h3><p>Scanner báo có, thực tế không có.<br><br>Ví dụ kinh điển: distro đã backport bản vá nhưng version string vẫn cũ, nên scanner tưởng chưa vá.</p></div><div class="card b-crit"><h3 class="c-crit">False Negative</h3><p>Scanner không báo, nhưng lỗ hổng thật sự tồn tại.<br><br>Phát hiện được nhờ đối chiếu với danh sách lỗ hổng nhóm đã cố tình tạo ra.</p></div></div>
+  <p class="quoteline center">FP làm bạn mệt. FN làm bạn bị hack.</p>
+  <ul class=""><li>Nhóm chọn ba finding để kiểm chứng trực tiếp: một đúng, một sai, một đúng nhưng không khai thác được</li><li>Reachability: thư viện dính CVE nhưng hàm lỗi không bao giờ được gọi tới thì rủi ro gần bằng không</li></ul>
+  <div class="takeaway">Bước Validation là thứ phân biệt một người chạy công cụ với một người phân tích an ninh.</div>
+
+  <aside class="notes">Neu hoi dong hoi mot cau kho nhat, kha nang cao la o day. Chuan bi vi du FP cu the.</aside>
+</section>
+<section class="slide light">
+  <h2>Ưu tiên xử lý — từ hàng trăm xuống vài chục</h2>
+  <div class="funnel"><div class="fb l0" style="width:100%">Tổng số finding &nbsp;·&nbsp; ___ mục</div><div class="fb l1" style="width:80%">Chỉ CRITICAL và HIGH &nbsp;·&nbsp; ___ mục</div><div class="fb l2" style="width:60%">Đã có bản vá (fixable) &nbsp;·&nbsp; ___ mục</div><div class="fb l3" style="width:40%">EPSS &gt; 0.1 — khả năng bị khai thác &nbsp;·&nbsp; ___ mục</div><div class="fb l4" style="width:22%">Nằm trong CISA KEV &nbsp;·&nbsp; ___ mục</div></div>
+  <p class="quoteline center">CVSS nói lỗ hổng nguy hiểm cỡ nào. &nbsp; EPSS nói khả năng ai đó sẽ dùng nó. &nbsp; KEV nói đã có người dùng nó rồi.</p>
+  <div class="takeaway">Số lượng finding không phải thước đo rủi ro. Việc thực sự phải làm nằm ở đáy phễu.</div>
+
+  <aside class="notes">Dien so lieu that. Day la 'money slide'.</aside>
+</section>
+<section class="slide light">
+  <h2>Phân loại biện pháp khắc phục theo Chương 4</h2>
+  <p class="sub">Năm subtype control ở slide 5 của nhóm trước, áp vào chính các biện pháp nhóm đã thực hiện</p>
+  <div class="ctrls"><div><span>Deterrent</span><p>Cảnh báo đăng nhập, chính sách xử lý vi phạm</p></div><div><span>Preventive</span><p>Tắt service thừa, bật firewall, prepared statement, bật auth cho CSDL</p></div><div><span>Detective</span><p>auditd, log tập trung, quét định kỳ theo lịch</p></div><div><span>Compensating</span><p>Đặt WAF trước ứng dụng chưa vá được ngay</p></div><div><span>Corrective</span><p>Vá lỗ hổng, rebuild image, xoay vòng credential đã lộ</p></div></div>
+  <div class="takeaway">Vá lỗ hổng chỉ là nhóm Corrective. Một chương trình an ninh trưởng thành phải có đủ cả năm.</div>
+
+</section>
+<section class="slide light">
+  <h2>Những gì Chương 4 chưa kịp có</h2>
+  <p class="sub">Giáo trình thuộc thế hệ SY0-401, khoảng 2014–2017. Bổ sung cập nhật, không phải phê phán.</p>
+  <div class="evo"><div><i>Antivirus theo signature</i><span>→</span><b>EDR / XDR — phát hiện theo hành vi</b></div><div><i>Application hardening thủ công</i><span>→</span><b>SBOM và SCA tự động trong pipeline</b></div><div><i>Bảo mật máy chủ vật lý</i><span>→</span><b>Container và Kubernetes security posture</b></div><div><i>DLP cổ điển</i><span>→</span><b>CSPM / DSPM cho môi trường cloud</b></div><div><i>Mô hình perimeter</i><span>→</span><b>Zero-trust — không tin tưởng mặc định</b></div><div><i>Ưu tiên theo mức nghiêm trọng</i><span>→</span><b>Ưu tiên theo rủi ro: EPSS và KEV</b></div></div>
+  <div class="takeaway">Nguyên lý ba tầng của Chương 4 vẫn đúng. Chỉ có công cụ và ranh giới hệ thống là đã thay đổi.</div>
+
+  <aside class="notes">Dong khung lich su, ton trong nhom truoc va giao trinh.</aside>
+</section>
+<section class="slide dark">
+  <h2>Ba điều mang về</h2>
+  <div class="finals"><div><span>1</span><div><b>Không công cụ nào phủ hết</b><p>Config, SCA, SAST, DAST nhìn vào bốn thứ khác nhau. Và lỗi logic nghiệp vụ thì không scanner nào chạm tới.</p></div></div><div><span>2</span><div><b>Số lượng finding không phải rủi ro</b><p>Phải đi qua Validation và Prioritization thì con số mới có ý nghĩa.</p></div></div><div><span>3</span><div><b>Rà quét không kết thúc ở báo cáo</b><p>Đủ sáu bước: discovery, scanning, validation, prioritization, remediation, verification.</p></div></div></div>
+
+  <aside class="notes">Chot bai. Noi cham, de lop kip ghi.</aside>
+</section>
+<section class="slide dark">
+  <h2>Câu hỏi</h2>
+  <p class="kicker">Bốn câu nhóm đã chuẩn bị sẵn câu trả lời</p>
+  <div class="qa"><div><b>Sao không dùng một công cụ cho xong?</b><p>Bốn lớp scanner nhìn vào bốn artifact khác nhau — xem lại ma trận độ phủ.</p></div><div><b>Quét ra 500 CVE nghĩa là hệ thống rất tệ?</b><p>Không. Phải lọc qua fixable, reachability, EPSS và KEV.</p></div><div><b>Quét xong là an toàn chưa?</b><p>Chưa. Scanner chỉ tìm được lỗ hổng đã biết — không thấy lỗi logic và zero-day.</p></div><div><b>Rà quét khác pentest thế nào?</b><p>Rà quét: tự động, diện rộng, dừng ở phát hiện. Pentest: con người, chiều sâu, khai thác thật.</p></div></div>
+
+  <aside class="notes">Slide du phong khi Q&A. Neu khong ai hoi thi tu neu ra mot cau va tra loi.</aside>
+</section>
+<section class="slide light appendix-slide">
+  <h2>Phụ lục — toàn bộ công cụ và mục đích</h2>
+  <p class="sub">Slide tham chiếu, không trình bày. Dùng khi trả lời câu hỏi hoặc khi nộp kèm báo cáo.</p>
+  <div class="appendix"><div><h4 class="c-accent">TẦNG HOST</h4><div class="ai"><code>nmap</code><small>Phát hiện host sống, cổng mở, đoán service/version</small></div><div class="ai"><code>ss -tulpn</code><small>Xác nhận từ bên trong service nào đang listen</small></div><div class="ai"><code>Lynis</code><small>Audit hardening cục bộ, cho ra Hardening Index</small></div><div class="ai"><code>OpenSCAP + SSG</code><small>Chấm điểm tuân thủ CIS Benchmark</small></div><div class="ai"><code>Greenbone/OpenVAS</code><small>Quét CVE, cả có và không credential</small></div><div class="ai"><code>Ansible / oscap --remediate</code><small>Khắc phục hàng loạt để đo lại score</small></div><div class="ai"><code>ClamAV + EICAR</code><small>Kiểm chứng antimalware phát hiện mẫu chuẩn</small></div><div class="ai"><code>secpol.msc / gpedit.msc</code><small>Security template và Group Policy trên Windows</small></div><div class="ai"><code>NSE modbus-discover, s7-info</code><small>Chỉ nêu trên slide — không quét ICS thật</small></div></div><div><h4 class="c-warn">TẦNG APPLICATION</h4><div class="ai"><code>trivy config</code><small>Misconfig trong Dockerfile và manifest (policy Rego)</small></div><div class="ai"><code>nikto</code><small>Cấu hình sai của web server, file mặc định</small></div><div class="ai"><code>curl -I</code><small>Kiểm tra security header — thụ động hoàn toàn</small></div><div class="ai"><code>syft</code><small>Sinh SBOM: liệt kê thành phần, chưa đánh giá</small></div><div class="ai"><code>grype</code><small>Đối chiếu SBOM với CSDL lỗ hổng</small></div><div class="ai"><code>trivy image</code><small>SCA trực tiếp trên image, so chéo với grype</small></div><div class="ai"><code>semgrep</code><small>SAST — so khớp mẫu trên AST, có taint mode</small></div><div class="ai"><code>OWASP ZAP</code><small>DAST — baseline scan live, full scan chạy trước</small></div><div class="ai"><code>Burp / DevTools</code><small>Chặn và sửa request để bypass client-side validation</small></div><div class="ai"><code>ffuf</code><small>Fuzzing đường dẫn và tham số</small></div></div><div><h4 class="c-crit">TẦNG DATA</h4><div class="ai"><code>NSE mongodb-info, redis-info</code><small>Phát hiện datastore không bật xác thực</small></div><div class="ai"><code>mongosh / redis-cli</code><small>Xác minh thủ công: kết nối không cần credential</small></div><div class="ai"><code>gitleaks</code><small>Tìm credential trong toàn bộ lịch sử git</small></div><div class="ai"><code>trufflehog</code><small>Như trên, còn gọi API xác minh key còn sống</small></div><div class="ai"><code>trivy --scanners secret</code><small>Tìm secret lẫn trong image layer</small></div><div class="ai"><code>curl / mc</code><small>Kiểm tra bucket MinIO có policy public không</small></div><div class="ai"><code>testssl.sh</code><small>TLS version, cipher suite, tình trạng chứng thư</small></div><div class="ai"><code>tcpdump + Wireshark</code><small>Bắt gói thụ động, Follow HTTP Stream</small></div><div class="ai"><code>lsblk, cryptsetup status</code><small>Xác nhận ổ đĩa có mã hoá hay không</small></div><div class="ai"><code>ps aux, /proc/&lt;pid&gt;/environ</code><small>Data in use — secret lộ qua tiến trình</small></div><div class="ai"><code>gcore + strings</code><small>Dump bộ nhớ tìm chuỗi nhạy cảm (tuỳ chọn)</small></div><div class="ai"><code>Script Python tự viết</code><small>Mini DLP: regex tìm CCCD, SĐT, email</small></div></div></div>
+  <p class="foot">Hỗ trợ xuyên suốt: docker / docker-compose dựng target · VMware snapshot để reset và nhảy trạng thái · asciinema ghi phiên terminal làm phương án dự phòng.</p>
+
+  <aside class="notes">Slide phu luc. Khong trinh bay.</aside>
+</section>
+</div>
+<div id="bar"></div>
+<div id="hud"></div>
+<div id="editflag">CHẾ ĐỘ SỬA — Ctrl+S để tải bản mới</div>
+<div id="notesbar" class="hidden"></div>
+<div id="help"><div>
+  <h3>Phím tắt</h3>
+  <div><kbd>→ ␣</kbd>Slide tiếp theo</div>
+  <div><kbd>←</kbd>Slide trước</div>
+  <div><kbd>O</kbd>Xem toàn bộ slide dạng lưới</div>
+  <div><kbd>N</kbd>Bật/tắt ghi chú người trình bày</div>
+  <div><kbd>F</kbd>Toàn màn hình</div>
+  <div><kbd>E</kbd>Bật/tắt chế độ sửa nội dung ngay trên slide</div>
+  <div><kbd>Ctrl+S</kbd>Tải về bản HTML đã sửa</div>
+  <div><kbd>Ctrl+P</kbd>In hoặc xuất PDF (mỗi slide một trang)</div>
+  <div><kbd>Esc</kbd>Đóng / thoát mọi chế độ</div>
+</div></div>
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+let i=0, notesOn=false;
+const bar=document.getElementById('bar'), hud=document.getElementById('hud'),
+      nb=document.getElementById('notesbar');
+
+function fit(){
+  if(document.body.classList.contains('overview'))return;
+  const s=Math.min(window.innerWidth/1280,(window.innerHeight-(notesOn?window.innerHeight*0.26:0))/720)*0.97;
+  slides.forEach(el=>el.style.transform='scale('+s+')');
+}
+function show(n){
+  i=Math.max(0,Math.min(slides.length-1,n));
+  slides.forEach((el,k)=>el.classList.toggle('active',k===i));
+  bar.style.width=((i+1)/slides.length*100)+'%';
+  hud.textContent=(i+1)+' / '+slides.length+'   ·   ? = trợ giúp';
+  const nEl=slides[i].querySelector('.notes');
+  nb.textContent=nEl?nEl.textContent.trim():'(không có ghi chú)';
+  location.hash=i+1;
+  fit();
+}
+function toggleNotes(){notesOn=!notesOn;nb.classList.toggle('hidden',!notesOn);fit();}
+function toggleEdit(){
+  const on=!document.body.classList.contains('editing');
+  document.body.classList.toggle('editing',on);
+  slides.forEach(el=>el.contentEditable=on?'true':'false');
+}
+function save(){
+  document.body.classList.remove('editing','overview');
+  slides.forEach(el=>{el.contentEditable='false';el.style.transform='';});
+  const html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+  a.download='ra-quet-lo-hong.html'; a.click();
+  show(i);
+}
+document.addEventListener('keydown',e=>{
+  if(document.body.classList.contains('editing')&&!e.ctrlKey&&!e.metaKey&&e.key!=='Escape')return;
+  switch(e.key){
+    case 'ArrowRight': case 'PageDown': case ' ': show(i+1); e.preventDefault(); break;
+    case 'ArrowLeft': case 'PageUp': show(i-1); e.preventDefault(); break;
+    case 'Home': show(0); break;
+    case 'End': show(slides.length-1); break;
+    case 'n': case 'N': toggleNotes(); break;
+    case 'e': case 'E': toggleEdit(); break;
+    case 's': case 'S': if(e.ctrlKey||e.metaKey){e.preventDefault();save();} break;
+    case 'o': case 'O':
+      document.body.classList.toggle('overview');
+      if(!document.body.classList.contains('overview'))show(i); else slides.forEach(el=>el.style.transform='');
+      break;
+    case 'f': case 'F':
+      if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+      break;
+    case '?': document.getElementById('help').classList.toggle('on'); break;
+    case 'Escape':
+      document.getElementById('help').classList.remove('on');
+      document.body.classList.remove('overview','editing');
+      slides.forEach(el=>el.contentEditable='false');
+      show(i); break;
+  }
+});
+document.addEventListener('click',e=>{
+  if(document.body.classList.contains('editing'))return;
+  if(document.body.classList.contains('overview')){
+    const s=e.target.closest('.slide');
+    if(s){document.body.classList.remove('overview');show(slides.indexOf(s));}
+    return;
+  }
+  if(e.clientX>window.innerWidth*0.55)show(i+1); else show(i-1);
+});
+window.addEventListener('resize',fit);
+show(parseInt(location.hash.slice(1))-1||0);
+nb.classList.add('hidden');
+</script>
+</body>
+</html>
