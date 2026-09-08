@@ -1,0 +1,59 @@
+# semgrep-lab.yaml — ruleset ĐÓNG GÓI SẴN cho tầng App, khớp đúng app.py (SAST-01..07).
+# Dùng offline, không cần tải registry:  semgrep --config semgrep-lab.yaml app/bad-image/app.py
+# (scan-03-sast.sh cũng thử thêm p/owasp-top-ten, p/python nếu có cache — không bắt buộc.)
+rules:
+  - id: lab-sast-01-hardcoded-secret
+    patterns:
+      - pattern: $VAR = "..."
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: '(?i).*(token|secret|key|password|passwd).*'
+    message: "SAST-01: secret nhét cứng trong mã nguồn — dùng biến môi trường / secret manager."
+    languages: [python]
+    severity: ERROR
+
+  - id: lab-sast-02-sql-string-concat
+    pattern-either:
+      - pattern: $CONN.execute("..." + $X)
+      - pattern: $Q = "..." + $X
+    message: "SAST-02: SQL nối chuỗi → SQL injection. Dùng prepared statement (execute(sql, params))."
+    languages: [python]
+    severity: ERROR
+
+  - id: lab-sast-03-command-injection
+    pattern-either:
+      - pattern: subprocess.$F(..., shell=True)
+      - pattern: os.system($X)
+    message: "SAST-03: command injection — shell=True/os.system với dữ liệu ngoài. Dùng list args, shell=False."
+    languages: [python]
+    severity: ERROR
+
+  - id: lab-sast-04-xss-html-concat
+    pattern-regex: 'return\s+"[^"]*<[^"]*"\s*\+\s*\w+'
+    message: "SAST-04: ghép dữ liệu vào HTML không escape → XSS. Escape output (markupsafe/template)."
+    languages: [python]
+    severity: WARNING
+
+  - id: lab-sast-05-unsafe-yaml-load
+    patterns:
+      - pattern: yaml.load($X)
+      - pattern-not: yaml.load($X, Loader=yaml.SafeLoader)
+    message: "SAST-05: yaml.load không SafeLoader → thực thi mã tuỳ ý. Dùng yaml.safe_load."
+    languages: [python]
+    severity: ERROR
+
+  - id: lab-sast-06-path-traversal
+    pattern: open(os.path.join(..., $X))
+    message: "SAST-06: ghép đường dẫn từ input chưa chuẩn hoá → path traversal. Kiểm tra realpath."
+    languages: [python]
+    severity: WARNING
+
+  - id: lab-sast-07-swallowed-exception
+    pattern: |
+      try:
+        ...
+      except Exception:
+        pass
+    message: "SAST-07: nuốt mọi exception (except: pass) → giấu lỗi. Bắt cụ thể + log."
+    languages: [python]
+    severity: WARNING

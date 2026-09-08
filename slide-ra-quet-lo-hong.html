@@ -465,9 +465,9 @@ nmap -sV -sC -oA evidence/host-discovery 172.16.50.20</pre>
 <div class="chip">TẦNG APP</div>
   <div class="badge">DEMO 4</div>
   <h2>Application configuration baseline</h2>
-  <pre class="cmd">trivy config ./dvwa-build/
-nikto -h http://172.16.50.20:8080
-curl -sI http://172.16.50.20:8080 | grep -iE "content-security|strict-transport|x-frame"</pre>
+  <pre class="cmd">trivy config app/bad-image/          # hoặc: bash scanner/app/scan-01-config.sh
+nikto -h http://172.16.50.20
+curl -sI http://172.16.50.20 | grep -iE "content-security|strict-transport|x-frame"</pre>
   <ul class=""><li>Thiếu CSP, HSTS, X-Frame-Options — trình duyệt không được lệnh siết bảo mật</li><li>Container chạy quyền root, base image dùng tag <code>:latest</code> không pin phiên bản</li></ul>
   <div class="mech"><div><h4>Nguồn tri thức</h4><p><code>trivy config</code> dùng bộ rule trivy-checks viết bằng Rego (ngôn ngữ policy của OPA). <code>nikto</code> dùng database khoảng 7000 mục: đường dẫn nguy hiểm và file mặc định đã biết.</p></div><div><h4>Quét thực chất là</h4><p>trivy parse Dockerfile và manifest thành cấu trúc dữ liệu rồi chạy policy trên đó — không chạy container. nikto gửi lần lượt vài nghìn request và xét mã trả về. <code>curl -I</code> chỉ đọc header, hoàn toàn thụ động.</p></div><div><h4>Vì sao có thể sai</h4><p>nikto báo theo đường dẫn tồn tại chứ không xác minh khai thác được hay không, nên tỷ lệ báo nhầm cao. Rule policy không biết ngữ cảnh triển khai thật.</p></div></div>
   <p class="foot warn">Ánh xạ slide 37 — "application configuration baseline"</p>

@@ -63,8 +63,10 @@ docker pull vulnerables/web-dvwa bkimminich/juice-shop nginx:1.21 \
 | 3 | Copy `lab/` lên cả 2 VM (mục dưới) | — | — |
 | 4 | **Test tool chạy được**: `bash bootstrap/smoke-scanner.sh` (Kali) · `bash bootstrap/smoke-target.sh` (Target) — phải exit 0 | cả 2 VM | — |
 | 5 | **Snapshot** khi smoke-test xanh: Kali=`scanner-tools-ready`, Target=`clean-install` | cả 2 VM | — |
-| 6 | PHASE 1A: `sudo bash target/host/make-all.sh` (hoặc từng `make-*.sh`) → snapshot `host-vuln` | Ubuntu `.20` | — |
-| 7 | Rà quét: `bash scanner/host/run-all.sh` (nmap/lynis/oscap/eicar) + `scan-04/05-gvm` (Web UI) | Kali `.10` | — |
+| 6 | PHASE 1A Host: `sudo bash target/host/make-all.sh` → snapshot `host-vuln` | Ubuntu `.20` | — |
+| 7 | Rà quét Host: `bash scanner/host/run-all.sh` + `scan-04/05-gvm` (Web UI) | Kali `.10` | — |
+| 8 | PHASE 1B App+Data: `bash target/app/make-all.sh` && `bash target/data/make-all.sh` → snapshot `app-data-vuln` | Ubuntu `.20` | — |
+| 9 | Rà quét App+Data: `bash scanner/app/run-all.sh` && `bash scanner/data/run-all.sh` (+ DAST/capture riêng) | Kali `.10` | — |
 
 Bước 5 phải xong **trước** bước 6, nếu không sẽ không quay lại được trạng thái sạch.
 Smoke-test (bước 4) gọi thật từng tool (offline) và exit≠0 nếu có tool lỗi — snapshot
@@ -114,10 +116,21 @@ lab/
 │   ├── scan-06-container-vs-vm.sh # lynis container vs VM
 │   ├── scan-07-eicar.sh           # ClamAV + EICAR (SSH)
 │   └── scan-08-baseline.sh        # baseline kiểu công ty: PAM + iptables@base + SSH AllowUsers (SSH)
+├── target/app/                   # scp sang Target — dựng lỗ hổng App qua Docker
+│   └── make-{webstack,badimage}.sh + make-all   # web stack (A01/02/07/08) · image xấu (A03/04/05/06)
+├── scanner/app/                  # scp sang Kali — 4 ống kính (config/SCA/SAST/DAST)
+│   ├── scan-01-config.sh  scan-02-sca.sh  scan-03-sast.sh
+│   ├── scan-04-dast-baseline.sh  scan-05-dast-full.sh  scan-06-fuzz.sh  run-all.sh
+│   └── semgrep-lab.yaml           # ruleset SAST đóng gói (offline, khớp SAST-01..07)
+├── target/data/                  # scp sang Target — dựng lỗ hổng Data qua Docker
+│   └── make-{tls,datastores,seed}.sh + make-all # cert yếu · datastore hở · nạp PII
+├── scanner/data/                 # scp sang Kali — 3 trạng thái dữ liệu
+│   └── scan-01-datastore … scan-06-capture + run-all  # no-auth · secret · storage/DLP · encryption · TLS · plaintext
 ├── scripts/
-│   ├── ground-truth-host.md      # ma trận GT-Hxx ↔ make-*.sh ↔ scan-*.sh + slide/bằng chứng
-│   └── app-0x / data-0x          (App/Data CHƯA VIẾT — Host làm mẫu trước)
-├── ansible/                      # remediation playbook tầng Host  (CHƯA VIẾT)
+│   ├── ground-truth-host.md      # ma trận GT-Hxx ↔ make ↔ scan
+│   ├── ground-truth-app.md       # ma trận GT-Axx (4 ống kính + ma trận độ phủ)
+│   └── ground-truth-data.md      # ma trận GT-Dxx (3 trạng thái + 3 sensor DLP)
+├── ansible/                      # remediation playbook  (CHƯA VIẾT)
 ├── evidence/  reports/           # đầu ra
 ```
 
@@ -226,12 +239,12 @@ Mỗi lỗi cố tình đều được đánh mã trong comment ngay tại file:
 
 ## Còn phải làm
 
-- [x] **Host tier (làm mẫu)**: `target/host/make-*.sh` (7 defect + make-all) ↔ `scanner/host/scan-01..07` + `run-all` + `ground-truth-host.md` (ma trận)
-- [ ] **App tier**: `target/app/make-*.sh` ↔ `scanner/app/scan-01..06` + `ground-truth-app.md` (nhân từ khuôn Host)
-- [ ] **Data tier**: `target/data/make-*.sh` ↔ `scanner/data/scan-01..06` + `ground-truth-data.md`
-- [ ] `ansible/remediate-host.yml`
-- [ ] ZAP authenticated context cho DVWA (rủi ro #2 của brief — làm sớm)
-- [ ] Slide + báo cáo NIST SP 800-115
+- [x] **Host tier**: `target/host/make-*.sh` (8 defect + make-all) ↔ `scanner/host/scan-01..08` + `run-all` + `ground-truth-host.md`
+- [x] **App tier**: `target/app/make-{webstack,badimage}.sh` + make-all ↔ `scanner/app/scan-01..06` + `run-all` + `semgrep-lab.yaml` + `ground-truth-app.md`
+- [x] **Data tier**: `target/data/make-{tls,datastores,seed}.sh` + make-all ↔ `scanner/data/scan-01..06` + `run-all` + `ground-truth-data.md`
+- [ ] `ansible/remediate-host.yml` (remediation tự động — để đo score trước/sau)
+- [ ] ZAP authenticated context cho DVWA (chuẩn bị trước ở nhà — xem scan-04/05)
+- [ ] Báo cáo NIST SP 800-115 (slide đã có)
 
 ## Lưu ý về git
 

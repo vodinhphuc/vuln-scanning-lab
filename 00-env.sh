@@ -44,4 +44,4 @@ banner() {
 export -f banner
 
 # Dấu thời gian dùng đặt tên file bằng chứng
-export TS="$(date +%Y%m%d-%H%M%S)"
+TS="$(date +%Y%m%d-%H%M%S)"; export TS
