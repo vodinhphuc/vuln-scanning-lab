@@ -9,15 +9,20 @@ cd "$(dirname "$0")" || exit 1; source ./_lib.sh
 
 hd "scan-06  Container vs VM — số test Lynis"
 
-info "1) Lynis trên VM (host đầy đủ):"
-VM_TESTS=$(on_target_sudo "lynis audit system --quick --no-colors 2>/dev/null | grep -c 'Performing test'")
+info "1) Lynis trên VM (host đầy đủ) — lấy 'Tests performed':"
+VM_TESTS=$(on_target_sudo "lynis audit system --quick --no-colors 2>/dev/null | grep 'Tests performed' | grep -oE '[0-9]+' | head -1")
 info "    số test đã chạy trên VM: ${VM_TESTS:-?}"
 
-info "2) Lynis trong container Ubuntu tối giản (cài nhanh, chạy trong đó):"
-CTEST=$(on_target_sudo "docker run --rm ubuntu:22.04 bash -c \
-  'apt-get update -qq >/dev/null 2>&1; apt-get install -y -q lynis >/dev/null 2>&1; \
-   lynis audit system --quick --no-colors 2>/dev/null | grep -c \"Performing test\"'" 2>/dev/null)
-info "    số test đã chạy trong container: ${CTEST:-? (cần image ubuntu:22.04 trên target)}"
+info "2) Lynis trong container tối giản (cần image + mạng để cài lynis):"
+CTEST=""
+if on_target "docker image inspect ubuntu:22.04 >/dev/null 2>&1"; then
+  CTEST=$(on_target_sudo "docker run --rm ubuntu:22.04 bash -c \
+    'apt-get update -qq >/dev/null 2>&1 && apt-get install -y -q lynis >/dev/null 2>&1 && \
+     lynis audit system --quick --no-colors 2>/dev/null | grep \"Tests performed\" | grep -oE \"[0-9]+\" | head -1'" 2>/dev/null)
+  info "    số test trong container: ${CTEST:-? (cài lynis trong container cần NAT)}"
+else
+  warn "target chưa có image ubuntu:22.04 — bỏ qua phần container (kéo khi CÒN NAT: docker pull ubuntu:22.04)"
+fi
 
 cat <<TXT
 

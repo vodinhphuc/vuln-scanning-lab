@@ -35,9 +35,16 @@ else f "iptables@base không active (baseline nạp rule qua service này)"; fi
 IPT=$(on_target_sudo "iptables -S 2>/dev/null")
 if echo "$IPT" | grep -qE '^-P INPUT DROP'; then p "default policy INPUT = DROP"
 else f "default policy INPUT không phải DROP (mở — GT-H07a)"; fi
-if echo "$IPT" | grep -qE -- '--dport 22 -s 0\.0\.0\.0/0|-A INPUT -p tcp --dport 22 -j ACCEPT'; then
-  f "SSH(22) mở ra toàn dải 0.0.0.0/0 (GT-H07b)"
-else p "SSH(22) không mở toàn dải (hoặc đã giới hạn nguồn)"; fi
+# iptables -S bỏ '-s 0.0.0.0/0' mặc định và thêm '-m tcp' -> phát hiện: có rule dport 22
+# ACCEPT nhưng KHÔNG có '-s' giới hạn nguồn = mở toàn dải.
+ssh22=$(echo "$IPT" | grep -E 'dport 22' | grep 'ACCEPT')
+if [[ -n "$ssh22" ]] && ! echo "$ssh22" | grep -q -- ' -s '; then
+  f "SSH(22) mở ra toàn dải (rule ACCEPT không giới hạn -s) (GT-H07b)"
+elif [[ -n "$ssh22" ]]; then
+  p "SSH(22) có rule nhưng đã giới hạn source (-s)"
+else
+  p "không có rule mở SSH(22) rộng"
+fi
 
 # ── 3) SSH AllowUsers ────────────────────────────────────────────────────────
 hd "3) SSH AllowUsers — least-privilege (GT-H03)"

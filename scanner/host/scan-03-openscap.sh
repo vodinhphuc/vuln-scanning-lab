@@ -14,16 +14,22 @@ DS=$(on_target "ls $DS_GLOB 2>/dev/null | head -1")
 [[ -n "$DS" ]] && ok "datastream: $DS" || { warn "target không có SCAP datastream — chạy bootstrap-target.sh"; exit 1; }
 
 info "Đang eval hồ sơ: ${PROFILE##*_profile_} (có thể mất ~1 phút)..."
-on_target_sudo "oscap xccdf eval --profile '$PROFILE' \
-   --results /tmp/host-03-results.xml --report /tmp/host-03-report.html '$DS' \
-   2>/dev/null | grep -E 'Title|Result|Rule' | head -40" | sed 's/^/    /'
+# KHÔNG pipe qua head: head đóng pipe sớm -> SIGPIPE giết oscap trước khi ghi results.xml.
+# Chạy trọn (oscap trả mã != 0 khi có rule fail — bình thường), rồi đọc kết quả qua sudo.
+on_target_sudo "oscap xccdf eval --profile '$PROFILE' --results /tmp/host-03-results.xml --report /tmp/host-03-report.html '$DS'" >/dev/null 2>&1
 
-info "Điểm tuân thủ (pass/fail):"
-on_target_sudo "grep -cE '<result>pass' /tmp/host-03-results.xml 2>/dev/null; \
-                grep -cE '<result>fail' /tmp/host-03-results.xml 2>/dev/null" \
-  | paste -sd'/' | sed 's#^#    pass/fail = #'
+RES="$EVID/host-03-results-$TS.xml"
+on_target_sudo "cat /tmp/host-03-results.xml" > "$RES" 2>/dev/null
+if [[ -s "$RES" ]]; then
+  p=$(grep -c '<result>pass</result>' "$RES" 2>/dev/null)
+  f=$(grep -c '<result>fail</result>' "$RES" 2>/dev/null)
+  ok "Điểm tuân thủ: pass=$p  fail=$f  (fail = baseline để so sau remediation)"
+  info "Vài rule FAIL đầu tiên:"
+  grep -B1 '<result>fail</result>' "$RES" 2>/dev/null | grep -oE 'idref="[^"]+"' | sed 's/idref="//;s/"//' | head -8 | sed 's/^/    /'
+else warn "không đọc được results.xml — kiểm oscap/sudo trên target"; fi
 
-from_target /tmp/host-03-report.html "$EVID/host-03-openscap-$TS.html" 2>/dev/null \
-  && ok "evidence (mở bằng trình duyệt): $EVID/host-03-openscap-$TS.html" \
+on_target_sudo "cat /tmp/host-03-report.html" > "$EVID/host-03-openscap-$TS.html" 2>/dev/null
+[[ -s "$EVID/host-03-openscap-$TS.html" ]] \
+  && ok "report HTML (mở bằng trình duyệt): $EVID/host-03-openscap-$TS.html" \
   || warn "chưa kéo được HTML report"
-ok "Số fail bây giờ = baseline; chạy lại sau remediation để thấy score tăng"
+ok "Số fail = baseline; chạy lại sau remediation để thấy score tăng"
