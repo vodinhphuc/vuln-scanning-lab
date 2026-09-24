@@ -5,7 +5,8 @@ Mở file này trên **máy khác** (điện thoại/tablet) trong lúc demo. M�
 thích trên slide, nên nói khớp với thứ khán giả nhìn thấy.
 
 - Deep-dive host = **172.16.50.21** · Scanner (Kali) = .10 · fleet breadth = .21–.23
-- Trên Kali trước khi chạy: `export TARGET=172.16.50.21` (KHÔNG source 00-env.sh — Kali dùng zsh)
+- Trên Kali trước khi chạy (Kali dùng zsh — KHÔNG source 00-env.sh): `export T=172.16.50.21 TARGET=172.16.50.21`
+  (`$T` dùng cho các lệnh tay bên dưới; `TARGET` cho `scan-*.sh`. Quên đặt `$T` thì nmap chạy **không có target** → tưởng lỗi `--script`.)
 - Cred SSH lab: `labadmin / LabOnly!2026`
 - Vòng đời 7 bước: Asset discovery → Scanning → Validation → Prioritization → Remediation → Verification → Reporting
 
