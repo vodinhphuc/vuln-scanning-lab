@@ -12,8 +12,10 @@ Scanner (Kali) = `.10`. Mạng host-only, không NAT lúc demo.
 ## Pre-flight — làm 1 lần TRƯỚC khi có khán giả
 
 ```bash
-# trên Kali
-source ~/lab/00-env.sh && export TARGET=172.16.50.21
+# trên Kali (zsh) — KHÔNG source 00-env.sh (nó là script bash, sẽ lỗi 'export -f'
+# và rớt phiên SSH). scan-*.sh tự source _lib.sh; chỉ cần export TARGET.
+export TARGET=172.16.50.21
+echo $TARGET
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:9392   # GVM phải 200/302
 ```
 
