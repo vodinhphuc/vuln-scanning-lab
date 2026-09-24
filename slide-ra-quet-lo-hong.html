@@ -317,6 +317,21 @@ body.overview #notesbar{display:none}
   <aside class="notes">Cau hoi de bat dau: 'Theo cac ban, quet ra 500 CVE thi he thong te den muc nao?'</aside>
 </section>
 <section class="slide light">
+  <h2>Từ vựng lỗ hổng — CVE · CVSS · EPSS · KEV</h2>
+  <p class="sub">Những cái tên xuất hiện suốt buổi — phân biệt để đọc báo cáo scanner cho đúng</p>
+  <table class="map"><thead><tr><th>Thuật ngữ</th><th>Nghĩa</th><th>Nguồn dữ liệu</th></tr></thead><tbody>
+    <tr><td><b>CVE</b></td><td>Mã định danh toàn cầu cho một lỗ hổng (vd <code>CVE-2021-44228</code> = Log4Shell). Chỉ là <b>cái tên</b>, không phải mức nguy hiểm.</td><td>cve.org</td></tr>
+    <tr><td><b>NVD</b></td><td>CSDL của NIST bổ sung chi tiết + điểm cho mỗi CVE. Nguồn mà Trivy/Grype tải về.</td><td>nvd.nist.gov</td></tr>
+    <tr><td><b>CVSS</b></td><td>Điểm 0–10 đo <b>mức nghiêm trọng kỹ thuật</b>. Không nói gì về khả năng bị tấn công thực tế.</td><td>first.org/cvss</td></tr>
+    <tr><td><b>EPSS</b></td><td>Xác suất 0–1 lỗ hổng <b>bị khai thác trong 30 ngày tới</b>. Bù đúng chỗ CVSS thiếu.</td><td>first.org/epss</td></tr>
+    <tr><td><b>KEV</b></td><td>Danh sách CISA gồm lỗ hổng <b>đã bị khai thác thực tế</b>.</td><td>cisa.gov/kev</td></tr>
+    <tr><td><b>SBOM</b></td><td>Bản kê thành phần phần mềm + version. Là <b>đầu vào</b> để đối chiếu CVE, không phải kết quả bảo mật.</td><td>syft · SPDX</td></tr>
+    <tr><td><b>FP / FN</b></td><td>False Positive: báo nhầm (tốn công). False Negative: bỏ sót (nguy hiểm hơn nhiều).</td><td>—</td></tr>
+  </tbody></table>
+  <div class="takeaway">CVSS nói lỗ hổng nguy hiểm cỡ nào · EPSS nói khả năng ai đó sẽ dùng · KEV nói đã có người dùng rồi.</div>
+  <aside class="notes">Bang tu vung nen. Chieu nhanh; quay lai bang nay khi gap tung tu o phan prioritization.</aside>
+</section>
+<section class="slide light">
   <h2>Vòng đời quản lý lỗ hổng</h2>
   <div class="flow"><div class="step"><b>Asset<br>discovery</b><small>Có những gì<br>trong mạng?</small></div><span class="arrow">›</span><div class="step"><b>Scanning</b><small>Rà quét<br>tự động</small></div><span class="arrow">›</span><div class="step hot"><b>Validation</b><small>Cái nào<br>thật?</small></div><span class="arrow">›</span><div class="step"><b>Prioritization</b><small>Vá cái nào<br>trước?</small></div><span class="arrow">›</span><div class="step"><b>Remediation</b><small>Khắc phục</small></div><span class="arrow">›</span><div class="step hot"><b>Verification<br>scan</b><small>Quét lại<br>để xác nhận</small></div><span class="arrow">›</span><div class="step"><b>Reporting</b><small>Báo cáo &amp;<br>theo dõi</small></div></div>
   <p class="note">Vòng đời <b>lặp liên tục</b>: Reporting khép lại chu kỳ rồi quay về Asset discovery — không kết thúc ở Verification.</p>
