@@ -13,8 +13,11 @@ apt-get install -y -q openssh-server >/dev/null 2>&1
 CONF=/etc/ssh/sshd_config.d/00-lab-weak.conf   # drop-in, xoá file này = bước remediation đầu tiên
 cat > "$CONF" <<'SSH'
 # LAB-WEAK — cố tình. Xoá file này là bước remediation đầu tiên.
-PermitRootLogin yes              # GT-H01: cho root đăng nhập trực tiếp
-PasswordAuthentication yes       # GT-H02: cho phép mật khẩu (không ép key)
+# sshd KHÔNG nhận comment cùng dòng với value (garbage at end of line) — comment phải ở dòng riêng.
+# GT-H01: cho root đăng nhập trực tiếp
+PermitRootLogin yes
+# GT-H02: cho phép mật khẩu (không ép key)
+PasswordAuthentication yes
 PermitEmptyPasswords no
 # GT-H03: AllowUsers liệt kê user THỪA (root, test) — vi phạm least-privilege.
 # Baseline lẽ ra chỉ cho admin cần thiết (labadmin); root + test không nên SSH được.

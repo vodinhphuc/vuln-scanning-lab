@@ -5,7 +5,7 @@
 # KHÔNG 'set -e'. Nạp: source "$(dirname "$0")/_lib.sh"
 
 ROOT="${ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"   # -> thư mục lab/
-TARGET="${TARGET:-172.16.50.20}"
+TARGET="${TARGET:-172.16.50.21}"
 URL_DVWA="${URL_DVWA:-http://$TARGET:8080}"
 URL_NGINX="${URL_NGINX:-http://$TARGET}"
 EVID="${EVID:-$HOME/lab/evidence}"; mkdir -p "$EVID"

@@ -5,7 +5,7 @@
 # KHÔNG 'set -e'. Nạp: source "$(dirname "$0")/_lib.sh"
 
 ROOT="${ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"   # -> thư mục lab/
-TARGET="${TARGET:-172.16.50.20}"
+TARGET="${TARGET:-172.16.50.21}"
 TARGET_SSH_USER="${TARGET_SSH_USER:-labadmin}"
 TARGET_SSH_PASS="${TARGET_SSH_PASS:-LabOnly!2026}"
 PORT_MONGO="${PORT_MONGO:-27017}"; PORT_REDIS="${PORT_REDIS:-6379}"

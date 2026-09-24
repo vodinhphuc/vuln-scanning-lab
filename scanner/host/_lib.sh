@@ -7,7 +7,7 @@
 #   - AUDIT TẠI CHỖ (lynis, openscap, clamav, container): công cụ chạy TRÊN target,
 #     nên các script này SSH vào target chạy rồi kéo báo cáo về — bạn chỉ thao tác ở Kali.
 
-TARGET="${TARGET:-172.16.50.20}"
+TARGET="${TARGET:-172.16.50.21}"
 LAB_NET="${LAB_NET:-172.16.50.0/24}"
 TARGET_SSH_USER="${TARGET_SSH_USER:-labadmin}"
 TARGET_SSH_PASS="${TARGET_SSH_PASS:-LabOnly!2026}"     # cred lab, chỉ tồn tại trong host-only

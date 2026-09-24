@@ -6,7 +6,7 @@ set -euo pipefail
 # --- Mạng lab (VMnet Host-only, không NAT ra Internet trong lúc demo) --------
 export LAB_NET="172.16.50.0/24"
 export SCANNER_IP="172.16.50.10"
-export TARGET_LINUX="172.16.50.20"
+export TARGET_LINUX="172.16.50.21"
 export TARGET_WIN="172.16.50.30"
 export TARGET_MSF="172.16.50.40"          # Metasploitable2 (tuỳ chọn)
 
