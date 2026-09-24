@@ -353,7 +353,7 @@ body.overview #notesbar{display:none}
 </section>
 <section class="slide light">
   <h2>Mô hình lab</h2>
-  <div class="cards cols-3 "><div class="card b-accent"><h3 class="c-accent">VM Scanner</h3><p>nmap · Greenbone · ZAP · Semgrep<br>testssl · tcpdump · Trivy · Syft</p><p class="tools">Kali Linux · 172.16.50.10</p></div><div class="card b-warn"><h3 class="c-warn">VM Target Linux</h3><p>Mục tiêu tầng Host<br>+ Docker cho tầng App và Data</p><p class="tools">Ubuntu 22.04 · 172.16.50.20</p></div><div class="card b-blue"><h3 class="c-blue">VM Target Windows</h3><p>Security template<br>và Group Policy</p><p class="tools">Windows · 172.16.50.30</p></div></div>
+  <div class="cards cols-3 "><div class="card b-accent"><h3 class="c-accent">VM Scanner</h3><p>nmap · Greenbone · ZAP · Semgrep<br>testssl · tcpdump · Trivy · Syft</p><p class="tools">Kali Linux · 172.16.50.10</p></div><div class="card b-warn"><h3 class="c-warn">VM Target Linux</h3><p>Mục tiêu tầng Host<br>+ Docker cho tầng App và Data</p><p class="tools">Ubuntu 22.04 · 172.16.50.21</p></div><div class="card b-blue"><h3 class="c-blue">VM Target Windows</h3><p>Security template<br>và Group Policy</p><p class="tools">Windows · 172.16.50.30</p></div></div>
   <p class="note">Mạng host-only, không NAT ra Internet trong lúc demo. Snapshot trước mỗi giai đoạn.</p>
   <ul class=""><li>Tầng Host chạy trên máy ảo thật — lý do sẽ giải thích ở phần sau</li><li>Tầng Application và Data chạy bằng container bên trong VM Target</li></ul>
   <div class="takeaway">Toàn bộ mục tiêu đều do nhóm tự dựng và cố tình để lỗ hổng, nhằm có "đáp án" để đối chiếu kết quả quét.</div>
@@ -386,7 +386,7 @@ body.overview #notesbar{display:none}
   <div class="badge">DEMO 1</div>
   <h2>Asset discovery — có gì trong mạng?</h2>
   <pre class="cmd">nmap -sn 172.16.50.0/24
-nmap -sV -sC -oA evidence/host-discovery 172.16.50.20</pre>
+nmap -sV -sC -oA evidence/host-discovery 172.16.50.21</pre>
   <ul class=""><li>Không thể bảo vệ thứ mình không biết là đang tồn tại</li><li>Kết quả cần chỉ ra: telnet, FTP, rpcbind đang chạy — đúng những service Chương 4 khuyên loại bỏ</li></ul>
   <div class="mech"><div><h4>Nguồn tri thức</h4><p>Không có checklist. Chỉ có thư viện fingerprint <code>nmap-service-probes</code> đi kèm công cụ, và script NSE viết bằng Lua.</p></div><div><h4>Quét thực chất là</h4><p>Gửi gói TCP SYN tới từng cổng: nhận SYN/ACK là mở, RST là đóng, im lặng là bị lọc. Với <code>-sV</code> thì bắt tay đầy đủ rồi so banner với fingerprint.</p></div><div><h4>Vì sao có thể sai</h4><p>Banner có thể bị sửa hoặc tắt. Firewall làm cổng mở trông như bị lọc. Phiên bản là suy đoán từ chuỗi banner, không phải sự thật.</p></div></div>
 
@@ -453,8 +453,8 @@ nmap -sV -sC -oA evidence/host-discovery 172.16.50.20</pre>
   <div class="badge">DEMO 4</div>
   <h2>Application configuration baseline</h2>
   <pre class="cmd">trivy config app/bad-image/          # hoặc: bash scanner/app/scan-01-config.sh
-nikto -h http://172.16.50.20
-curl -sI http://172.16.50.20 | grep -iE "content-security|strict-transport|x-frame"</pre>
+nikto -h http://172.16.50.21
+curl -sI http://172.16.50.21 | grep -iE "content-security|strict-transport|x-frame"</pre>
   <ul class=""><li>Thiếu CSP, HSTS, X-Frame-Options — trình duyệt không được lệnh siết bảo mật</li><li>Container chạy quyền root, base image dùng tag <code>:latest</code> không pin phiên bản</li></ul>
   <div class="mech"><div><h4>Nguồn tri thức</h4><p><code>trivy config</code> dùng bộ rule trivy-checks viết bằng Rego (ngôn ngữ policy của OPA). <code>nikto</code> dùng database khoảng 7000 mục: đường dẫn nguy hiểm và file mặc định đã biết.</p></div><div><h4>Quét thực chất là</h4><p>trivy parse Dockerfile và manifest thành cấu trúc dữ liệu rồi chạy policy trên đó — không chạy container. nikto gửi lần lượt vài nghìn request và xét mã trả về. <code>curl -I</code> chỉ đọc header, hoàn toàn thụ động.</p></div><div><h4>Vì sao có thể sai</h4><p>nikto báo theo đường dẫn tồn tại chứ không xác minh khai thác được hay không, nên tỷ lệ báo nhầm cao. Rule policy không biết ngữ cảnh triển khai thật.</p></div></div>
   <p class="foot warn">Ánh xạ slide 37 — "application configuration baseline"</p>
@@ -488,7 +488,7 @@ grype sbom:evidence/sbom.json</pre>
   <div class="badge">DEMO 7</div>
   <h2>DAST — tấn công ứng dụng đang chạy</h2>
   <pre class="cmd">docker run --rm -v $(pwd):/zap/wrk owasp/zap2docker-stable \
-  zap-baseline.py -t http://172.16.50.20:8080 -r zap-report.html</pre>
+  zap-baseline.py -t http://172.16.50.21:8080 -r zap-report.html</pre>
   <ul class=""><li>Baseline scan: thụ động, nhanh — dùng demo trực tiếp. Full scan: gửi payload thật, chạy trước ở nhà</li><li>Bắt buộc cấu hình authenticated context, nếu không scanner chỉ quét được trang đăng nhập</li></ul>
   <div class="mech"><div><h4>Nguồn tri thức</h4><p>Không có checklist chuẩn. ZAP mang theo thư viện payload tấn công cho từng loại lỗ hổng, cộng với heuristic để đọc phản hồi.</p></div><div><h4>Quét thực chất là</h4><p>Spider bò khắp ứng dụng để tìm bề mặt trước. Sau đó với mỗi tham số phát hiện được — URL, form field, cookie, header — lần lượt chèn payload, gửi request, rồi so phản hồi với phản hồi gốc.</p></div><div><h4>Kết luận dựa vào đâu</h4><p>Thông báo lỗi CSDL lộ ra (SQLi), payload bị phản chiếu nguyên văn vào trang (XSS), độ trễ phản hồi tăng đúng khoảng thời gian chèn vào (blind SQLi), hoặc nội dung khác biệt giữa hai request.</p></div></div>
   <p class="foot warn">Lỗi phổ biến nhất khi dùng DAST lần đầu: quên cấu hình session rồi kết luận nhầm rằng ứng dụng an toàn.</p>
@@ -527,8 +527,9 @@ grype sbom:evidence/sbom.json</pre>
 <div class="chip">TẦNG DATA</div>
   <div class="badge">DEMO 9</div>
   <h2>Data at rest — nằm yên nhưng không khoá</h2>
-  <pre class="cmd">nmap -p 27017,6379,9000 --script mongodb-info,redis-info 172.16.50.20
-mongosh mongodb://172.16.50.20:27017        # khong can credential
+  <pre class="cmd">nmap -p 27017,6379,9000 --script mongodb-info,redis-info 172.16.50.21
+mongosh mongodb://172.16.50.21:27017        # khong can credential
+curl http://172.16.50.21:9000/hocvien-backup/pii.csv   # bucket public: tai PII khong can dang nhap
 gitleaks detect --source ./app --report-path evidence/secrets.json</pre>
   <ul class=""><li>MongoDB không bật auth và bind 0.0.0.0; bucket MinIO đặt policy public read</li><li>Connection string chứa mật khẩu bị hardcode trong mã nguồn và trong image layer</li></ul>
   <div class="mech"><div><h4>Quét datastore thực chất là</h4><p>Script NSE kết nối tới cổng rồi gửi lệnh của chính giao thức đó — MongoDB <code>buildInfo</code>, Redis <code>INFO</code>. Nếu server trả lời mà không đòi credential thì kết luận là chưa bật xác thực.</p></div><div><h4>Tìm secret thực chất là</h4><p>gitleaks duyệt toàn bộ lịch sử git, không chỉ thư mục hiện tại, dùng bộ regex cho từng loại credential cộng với điểm entropy Shannon để bắt chuỗi ngẫu nhiên đáng ngờ.</p></div><div><h4>Vì sao regex chưa đủ</h4><p>Chuỗi entropy cao có thể chỉ là mã hash vô hại. trufflehog khác ở chỗ còn gọi API nhà cung cấp để xác minh key còn sống hay không, nên giảm mạnh false positive.</p></div></div>
@@ -539,8 +540,8 @@ gitleaks detect --source ./app --report-path evidence/secrets.json</pre>
 <div class="chip">TẦNG DATA</div>
   <div class="badge">DEMO 10</div>
   <h2>Data in transit — mật khẩu bay qua mạng</h2>
-  <pre class="cmd">testssl.sh https://172.16.50.20
-sudo tcpdump -i ens33 -w evidence/plaintext.pcap port 8080</pre>
+  <pre class="cmd">testssl.sh https://172.16.50.21
+sudo tcpdump -i any -w evidence/plaintext.pcap port 8080</pre>
   <div class="alert"><b>Wireshark → Follow HTTP Stream</b><code>username=admin&amp;password=•••••••••&nbsp;&nbsp;&nbsp;&nbsp; ← hiện nguyên văn trên màn hình</code></div>
   <div class="mech"><div><h4>testssl.sh làm gì</h4><p>Mở hàng loạt kết nối liên tiếp, mỗi lần chào server bằng đúng một phiên bản giao thức hoặc một cipher suite cụ thể, ghi lại cái nào được chấp nhận để dựng bảng hỗ trợ. Sau đó kiểm tra chứng thư và probe riêng cho từng lỗ hổng giao thức.</p></div><div><h4>tcpdump làm gì</h4><p>Đặt card mạng ở chế độ nghe, kernel lọc gói bằng BPF rồi sao chép lên không gian người dùng. Hoàn toàn thụ động — không gửi gì và không để lại dấu vết nào trên máy đích.</p></div><div><h4>Ý nghĩa</h4><p>Đây chính là hai thái cực active và passive đã nói ở Phần 1, và là lý do tồn tại của DLP network sensor mà Chương 4 nhắc ở slide 48.</p></div></div>
 
