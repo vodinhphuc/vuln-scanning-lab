@@ -4,20 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Rà quét lỗ hổng — Host, Application &amp; Data</title>
-<!--
-  BỘ SLIDE THỰC HÀNH: RÀ QUÉT LỖ HỔNG
-  Một file duy nhất, không phụ thuộc Internet hay thư viện ngoài.
-  Mở bằng bất kỳ trình duyệt nào trên Windows, macOS hay Linux.
-
-  CÁCH SỬA NỘI DUNG
-    1. Sửa trực tiếp trong trình duyệt: nhấn E, gõ, rồi Ctrl+S để tải bản mới về.
-    2. Hoặc mở file này bằng trình soạn thảo văn bản và sửa phần HTML bên dưới.
-       Mỗi slide là một thẻ <section class="slide ...">.
-       Ghi chú người trình bày nằm trong <aside class="notes">.
-    3. Đổi màu, cỡ chữ: sửa các biến trong khối :root ở đầu phần <style>.
-
-  XUẤT PDF: Ctrl+P, chọn khổ ngang, bỏ header/footer, bật "Background graphics".
--->
 <style>
 :root{
   --dark:#141B24; --dark2:#1E2A36; --darker:#0F1720;
@@ -292,33 +278,33 @@ body.overview #notesbar{display:none}
 <section class="slide title">
   <h1>Rà quét lỗ hổng</h1>
   <p class="lead">Thực hành trên ba tầng: Host &middot; Application &middot; Data</p>
-  <p class="meta">Môn An ninh mạng — Chương trình cao học &nbsp;|&nbsp; Nhóm trình bày: [tên nhóm] &nbsp;|&nbsp; [ngày]</p>
+  <p class="meta">Môn An ninh mạng — Chương trình cao học &nbsp;|&nbsp; Nhóm trình bày: Võ Đình Phúc - Đồng Đức Anh &nbsp;</p>
   <aside class="notes">Gioi thieu nhom, thoi luong, va noi ro day la buoi THUC HANH noi tiep phan ly thuyet Chapter 4 cua nhom truoc.</aside>
 </section>
 <section class="slide dark">
   <p class="kicker">Nhóm trước đã trình bày Chương 4</p>
   <p class="big">Chương 4 trả lời: <span class="q">"Cần bảo vệ những gì"</span></p>
   <p class="big accent">Buổi này trả lời: <span class="q">"Làm sao biết mình chưa bảo vệ được"</span></p>
-  <div class="panel">Rà quét lỗ hổng chính là <b>hàm verification</b> cho từng security control mà Chương 4 nêu ra.<br>Mỗi công cụ hôm nay đều được neo vào một slide cụ thể của nhóm trước.</div>
+  <div class="panel"><b>Tại sao cần rà quét lỗ hổng?</b> Có một security control không bảo đảm nó đang hoạt động — cấu hình lệch, vá sót, service bật thừa xảy ra liên tục, và CVE mới xuất hiện mỗi ngày. Rà quét là cách <b>tự động, lặp lại được</b> để liên tục kiểm chứng hệ thống thực sự đang ở đâu so với mức cần đạt.</div>
   <aside class="notes">Luan diem trung tam. Nhan manh: khong lap lai ly thuyet cua nhom truoc, ma kiem chung no bang cong cu thuc te.</aside>
 </section>
 <section class="slide light">
   <h2>Nội dung buổi thực hành</h2>
-  <div class="agenda"><div class="arow"><span class="num muted">1</span><div><b>Nền tảng khái niệm</b><small>Lỗ hổng là gì, hai loại rà quét, bộ công cụ, vòng đời quản lý lỗ hổng</small></div><span class="dur">10 phút</span></div><div class="arow"><span class="num">2</span><div><b>Tầng HOST</b><small>Baseline, hardening, patch management, antimalware</small></div><span class="dur">12 phút</span></div><div class="arow"><span class="num">3</span><div><b>Tầng APPLICATION</b><small>Config, dependency, mã nguồn, runtime — bốn ống kính</small></div><span class="dur">14 phút</span></div><div class="arow"><span class="num">4</span><div><b>Tầng DATA</b><small>Ba trạng thái dữ liệu: at rest, in transit, in use</small></div><span class="dur">14 phút</span></div><div class="arow"><span class="num">5</span><div><b>Tổng hợp</b><small>Validation, ưu tiên xử lý, khắc phục, và những gì đã thay đổi</small></div><span class="dur">10 phút</span></div></div>
+  <div class="agenda"><div class="arow"><span class="num muted">1</span><div><b>Nền tảng khái niệm</b><small>Lỗ hổng là gì, hai loại rà quét, bộ công cụ, vòng đời quản lý lỗ hổng</small></div></div><div class="arow"><span class="num">2</span><div><b>Tầng HOST</b><small>Baseline, hardening, patch management, antimalware</small></div></div><div class="arow"><span class="num">3</span><div><b>Tầng APPLICATION</b><small>Config, dependency, mã nguồn, runtime — bốn ống kính</small></div></div><div class="arow"><span class="num">4</span><div><b>Tầng DATA</b><small>Ba trạng thái dữ liệu: at rest, in transit, in use</small></div></div><div class="arow"><span class="num">5</span><div><b>Tổng hợp</b><small>Validation, ưu tiên xử lý, khắc phục, và những gì đã thay đổi</small></div></div></div>
 
   <aside class="notes">Neu chi co 30 phut: bo Demo EICAR, fuzzing va physical checklist; giu lai bat goi plaintext va bypass client-side validation.</aside>
 </section>
 <section class="slide light">
   <h2>Phạm vi và nguyên tắc thực hiện</h2>
   <p class="sub">Scope &amp; Rules of Engagement</p>
-  <div class="cards cols-2 "><div class="card b-ok"><h3 class="c-ok">Được phép trong buổi này</h3><ul><li>Chỉ quét tài sản do chính nhóm dựng</li><li>Toàn bộ VM nằm trong mạng host-only 172.16.50.0/24</li><li>Không kết nối Internet trong lúc demo</li><li>Dữ liệu cá nhân trong lab là dữ liệu bịa hoàn toàn</li><li>Có snapshot trước mỗi giai đoạn</li></ul></div><div class="card b-crit"><h3 class="c-crit">Không thực hiện</h3><ul><li>Không quét hệ thống của trường hay bên thứ ba</li><li>Không quét thiết bị SCADA/ICS thật — active scan có thể làm treo PLC</li><li>Không dùng dữ liệu thật của bất kỳ ai</li><li>Không khai thác sâu — đây là rà quét, không phải penetration test</li></ul></div></div>
+  <div class="cards cols-2 "><div class="card b-ok"><h3 class="c-ok">Được phép trong buổi này</h3><ul><li>Chỉ quét tài sản do chính nhóm dựng</li><li>Toàn bộ VM nằm trong mạng host-only, cô lập</li><li>Không kết nối Internet trong lúc demo</li><li>Dữ liệu cá nhân trong lab là dữ liệu bịa hoàn toàn</li><li>Có snapshot trước mỗi giai đoạn</li></ul></div><div class="card b-crit"><h3 class="c-crit">Không thực hiện</h3><ul><li>Không quét hệ thống của trường hay bên thứ ba</li><li>Không quét thiết bị SCADA/ICS thật — active scan có thể làm treo PLC</li><li>Không dùng dữ liệu thật của bất kỳ ai</li><li>Không khai thác sâu — đây là rà quét, không phải penetration test</li></ul></div></div>
   <div class="takeaway">Rà quét lỗ hổng không có sự cho phép bằng văn bản là hành vi vi phạm pháp luật, kể cả khi không gây thiệt hại.</div>
 
   <aside class="notes">Slide bat buoc. Nhan manh khia canh phap ly va dao duc nghe nghiep truoc khi chay bat ky lenh nao.</aside>
 </section>
 <section class="slide section">
   <div class="secnum">1</div>
-  <div><h2>Nền tảng khái niệm</h2><p>Dành cho người mới — ba khái niệm, hai loại rà quét, một vòng đời</p></div>
+  <div><h2>Nền tảng khái niệm</h2></div>
   <aside class="notes">Phan nay danh cho nguoi it kien thuc. Ai da biet roi thi coi nhu on lai.</aside>
 </section>
 <section class="slide light">
@@ -332,12 +318,13 @@ body.overview #notesbar{display:none}
 </section>
 <section class="slide light">
   <h2>Vòng đời quản lý lỗ hổng</h2>
-  <div class="flow"><div class="step"><b>Asset<br>discovery</b><small>Có những gì<br>trong mạng?</small></div><span class="arrow">›</span><div class="step"><b>Scanning</b><small>Rà quét<br>tự động</small></div><span class="arrow">›</span><div class="step hot"><b>Validation</b><small>Cái nào<br>thật?</small></div><span class="arrow">›</span><div class="step"><b>Prioritization</b><small>Vá cái nào<br>trước?</small></div><span class="arrow">›</span><div class="step"><b>Remediation</b><small>Khắc phục</small></div><span class="arrow">›</span><div class="step hot"><b>Verification<br>scan</b><small>Quét lại<br>để xác nhận</small></div></div>
+  <div class="flow"><div class="step"><b>Asset<br>discovery</b><small>Có những gì<br>trong mạng?</small></div><span class="arrow">›</span><div class="step"><b>Scanning</b><small>Rà quét<br>tự động</small></div><span class="arrow">›</span><div class="step hot"><b>Validation</b><small>Cái nào<br>thật?</small></div><span class="arrow">›</span><div class="step"><b>Prioritization</b><small>Vá cái nào<br>trước?</small></div><span class="arrow">›</span><div class="step"><b>Remediation</b><small>Khắc phục</small></div><span class="arrow">›</span><div class="step hot"><b>Verification<br>scan</b><small>Quét lại<br>để xác nhận</small></div><span class="arrow">›</span><div class="step"><b>Reporting</b><small>Báo cáo &amp;<br>theo dõi</small></div></div>
+  <p class="note">Vòng đời <b>lặp liên tục</b>: Reporting khép lại chu kỳ rồi quay về Asset discovery — không kết thúc ở Verification.</p>
   <h4 class="mini accent">Hai bước tô đậm là hai bước hay bị bỏ nhất</h4>
-  <ul class=""><li>Bỏ Validation → báo cáo đầy false positive, đội vận hành mất niềm tin vào công cụ</li><li>Bỏ Verification scan → không ai biết bản vá có thực sự hiệu lực hay không</li><li>Buổi hôm nay sẽ đi đủ cả sáu bước, không dừng ở bước Scanning</li></ul>
-  <div class="takeaway">Rà quét chỉ là một bước trong sáu. Xuất báo cáo xong không phải là kết thúc công việc.</div>
+  <ul class=""><li>Bỏ Validation → báo cáo đầy false positive, đội vận hành mất niềm tin vào công cụ</li><li>Bỏ Verification scan → không ai biết bản vá có thực sự hiệu lực hay không</li><li>Buổi hôm nay sẽ đi đủ cả bảy bước, không dừng ở bước Scanning</li></ul>
+  <div class="takeaway">Rà quét chỉ là một bước trong bảy. Xuất báo cáo xong không phải là kết thúc công việc — chu kỳ lặp lại.</div>
 
-  <aside class="notes">Rat nhieu bai thuc hanh chi dung o buoc 2. Diem khac biet cua nhom minh la di het 6 buoc.</aside>
+  <aside class="notes">Rat nhieu bai thuc hanh chi dung o buoc 2. Diem khac biet cua nhom minh la di het 7 buoc, va nhan manh day la vong lap lien tuc.</aside>
 </section>
 <section class="slide light">
   <h2>Hai loại rà quét — và ba cặp khái niệm đối lập</h2>
@@ -352,7 +339,7 @@ body.overview #notesbar{display:none}
 <section class="slide light">
   <h2>Bộ công cụ dùng trong buổi này</h2>
   <p class="sub">Xếp theo đúng khung vừa nói — mỗi tầng đều cần cả hai loại rà quét, cộng thêm nhóm công cụ chỉ để quan sát</p>
-  <div class="tiergrid"><div class="th">TẦNG HOST</div><div class="th">TẦNG APPLICATION</div><div class="th">TẦNG DATA</div><div class="rowlabel c-accent">Đối chiếu với CHUẨN CẤU HÌNH</div><div class="tcell b-accent"><code>OpenSCAP + CIS Benchmark<br>Lynis</code></div><div class="tcell b-accent"><code>trivy config<br>nikto · curl -I</code></div><div class="tcell b-accent"><code>bucket policy MinIO<br>lsblk · cryptsetup status</code></div><div class="rowlabel c-warn">Đối chiếu với TRI THỨC VỀ LỖ HỔNG — CVE, rule, payload</div><div class="tcell b-warn"><code>Greenbone / OpenVAS<br>(unauth và authenticated)</code></div><div class="tcell b-warn"><code>syft + grype · trivy image<br>semgrep · OWASP ZAP</code></div><div class="tcell b-warn"><code>testssl.sh<br>NSE mongodb-info, redis-info</code></div><div class="rowlabel c-muted">QUAN SÁT và KIỂM CHỨNG — công cụ không mang sẵn tri thức</div><div class="tcell b-muted"><code>nmap · ss -tulpn<br>ClamAV + EICAR</code></div><div class="tcell b-muted"><code>Burp / DevTools · ffuf</code></div><div class="tcell b-muted"><code>tcpdump · Wireshark<br>gitleaks · ps · /proc</code></div></div>
+  <div class="tiergrid"><div class="th">TẦNG HOST</div><div class="th">TẦNG APPLICATION</div><div class="th">TẦNG DATA</div><div class="rowlabel c-accent">Đối chiếu với CHUẨN CẤU HÌNH</div><div class="tcell b-accent"><code>OpenSCAP + CIS Benchmark<br>Lynis</code></div><div class="tcell b-accent"><code>trivy config<br>nikto · curl -I</code></div><div class="tcell b-accent"><code>bucket policy MinIO<br>lsblk · cryptsetup status</code></div><div class="rowlabel c-warn">Đối chiếu với TRI THỨC VỀ LỖ HỔNG — CVE, rule, payload</div><div class="tcell b-warn"><code>Greenbone / OpenVAS<br>(unauth và authenticated)</code><br><small class="c-muted">Tương đương thương mại: Nessus · InsightVM · Qualys</small></div><div class="tcell b-warn"><code>syft + grype · trivy image<br>semgrep · OWASP ZAP</code></div><div class="tcell b-warn"><code>testssl.sh<br>NSE mongodb-info, redis-info</code></div><div class="rowlabel c-muted">QUAN SÁT và KIỂM CHỨNG — công cụ không mang sẵn tri thức</div><div class="tcell b-muted"><code>nmap · ss -tulpn<br>ClamAV + EICAR</code></div><div class="tcell b-muted"><code>Burp / DevTools · ffuf</code></div><div class="tcell b-muted"><code>tcpdump · Wireshark<br>gitleaks · ps · /proc</code></div></div>
   <div class="takeaway">Hàng thứ ba là nhóm không tự kết luận được gì — nmap, tcpdump, ffuf chỉ đưa dữ liệu thô, còn diễn giải là việc của người phân tích.</div>
 
   <aside class="notes">Slide ban do. Chieu nhanh 45 giay, khong doc het ten cong cu.</aside>
@@ -423,7 +410,7 @@ nmap -sV -sC -oA evidence/host-discovery 172.16.50.20</pre>
   <h2>Quét có đăng nhập và quét không đăng nhập</h2>
   <p class="sub">Cùng một máy đích, cùng một công cụ — chỉ khác ở chỗ có cung cấp credential hay không</p>
   <div class="stats two"><div class="stat plain"><small>Unauthenticated</small><b>___ findings</b><em>Phát hiện version qua banner rồi so với khoảng version dính CVE — tức là suy luận, không khai thác</em></div><div class="stat acc"><small>Authenticated</small><b>___ findings</b><em>Đăng nhập SSH, chạy <code>dpkg -l</code> lấy danh sách package chính xác, đối chiếu security advisory của distro</em></div></div>
-  <div class="mech"><div><h4>Nguồn tri thức</h4><p>NVT feed — hàng chục nghìn script NASL đồng bộ từ Greenbone Community Feed, mỗi script gắn với một hoặc nhiều CVE. Đây là thứ mất 1–3 tiếng để tải về lần đầu.</p></div><div><h4>Quét thực chất là</h4><p>Dò cổng và service trước, rồi với mỗi service chạy những NVT phù hợp. Phần lớn NVT chỉ so khớp phiên bản; một số ít gửi probe an toàn để kiểm tra hành vi. Scanner không khai thác lỗ hổng.</p></div><div><h4>Vì sao có thể sai</h4><p>Distro thường backport bản vá nhưng giữ nguyên chuỗi version. Scanner tưởng chưa vá và báo nhầm — false positive kinh điển sẽ demo ở phần Validation.</p></div></div>
+  <div class="mech"><div><h4>Nguồn tri thức</h4><p>NVT feed — hàng chục nghìn script NASL đồng bộ từ Greenbone Community Feed, mỗi script gắn với một hoặc nhiều CVE. Đây là thứ mất 1–3 tiếng để tải về lần đầu. Greenbone/OpenVAS là nhánh mã nguồn mở tách từ Nessus (2005); doanh nghiệp thường dùng Nessus/InsightVM/Qualys — cùng cơ chế, khác bộ feed.</p></div><div><h4>Quét thực chất là</h4><p>Dò cổng và service trước, rồi với mỗi service chạy những NVT phù hợp. Phần lớn NVT chỉ so khớp phiên bản; một số ít gửi probe an toàn để kiểm tra hành vi. Scanner không khai thác lỗ hổng.</p></div><div><h4>Vì sao có thể sai</h4><p>Distro thường backport bản vá nhưng giữ nguyên chuỗi version. Scanner tưởng chưa vá và báo nhầm — false positive kinh điển sẽ demo ở phần Validation.</p></div></div>
   <p class="foot warn">Một báo cáo "sạch" có thể chỉ nghĩa là scanner chưa được cho nhìn thấy đủ.</p>
 
   <aside class="notes">Mot trong nhung con so an tuong nhat cua tang Host. Chuan bi san ca hai report.</aside>
