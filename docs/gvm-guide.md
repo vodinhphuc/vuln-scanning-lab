@@ -7,21 +7,30 @@ feed lưu trong volume `gvm-data` (đã sync trước → không cần tải l�
 
 ## 1. Khởi động GVM
 
-### Cách khuyến nghị (nhanh, chạy offline) — bỏ qua sync
-Feed đã nằm trong volume `gvm-data`, nên **bỏ sync** để lên "ready" trong ~1–3 phút,
-không phụ thuộc Internet:
+### Cách khuyến nghị — docker compose
+File `scanner/gvm/docker-compose.yml` đã cấu hình sẵn `SKIPSYNC=true` (bỏ sync feed
+lúc khởi động — feed đã có trong volume `gvm-data`), bind `127.0.0.1:9392`, và tái
+dùng đúng volume đã sync (`name: gvm-data`).
 
 ```bash
-sudo docker rm -f gvmd 2>/dev/null
-sudo docker run -d --name gvmd -p 9392:9392 \
-  -e SKIPSYNC=true -e PASSWORD=labadmin \
-  -v gvm-data:/data immauss/openvas:latest
-
-sudo docker logs -f gvmd        # chờ dòng "container is now ready to use!" -> Ctrl-C
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:9392   # mong 200/302
+cd ~/lab
+sudo docker rm -f gvmd 2>/dev/null                 # gỡ container cũ (nếu có) để khỏi trùng tên
+sudo docker compose -f scanner/gvm/docker-compose.yml up -d
+sudo docker compose -f scanner/gvm/docker-compose.yml logs -f   # chờ "container is now ready to use!" -> Ctrl-C
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:9392  # mong 200/302
 ```
 
-> `Ctrl-C` chỉ thoát xem log, **không** giết container.
+> `Ctrl-C` chỉ thoát xem log, **không** dừng container.
+> Muốn cập nhật feed mới (cần Internet): sửa `SKIPSYNC=true` → `false` trong compose rồi `up -d` lại.
+
+### Cách thủ công (không có compose) — docker run
+```bash
+sudo docker rm -f gvmd 2>/dev/null
+sudo docker run -d --name gvmd -p 127.0.0.1:9392:9392 \
+  -e SKIPSYNC=true -e PASSWORD=labadmin \
+  -v gvm-data:/data immauss/openvas:latest
+sudo docker logs -f gvmd        # chờ "container is now ready to use!" -> Ctrl-C
+```
 
 ### Nếu container đã có sẵn (chỉ bị tắt)
 ```bash

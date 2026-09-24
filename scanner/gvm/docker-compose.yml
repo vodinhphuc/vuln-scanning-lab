@@ -1,0 +1,27 @@
+# GVM / Greenbone (immauss/openvas) cho VM Scanner (Kali).
+# Chạy:  sudo docker compose -f scanner/gvm/docker-compose.yml up -d
+# Xem log tới khi "container is now ready to use!":  sudo docker compose -f scanner/gvm/docker-compose.yml logs -f
+# Web UI: http://127.0.0.1:9392  (HTTP, KHÔNG https) — admin / labadmin
+name: gvm
+
+services:
+  gvmd:
+    image: immauss/openvas:latest
+    container_name: gvmd
+    restart: unless-stopped
+    ports:
+      # Chỉ bind localhost của Kali — KHÔNG lộ 9392 ra mạng host-only.
+      - "127.0.0.1:9392:9392"
+    environment:
+      - USERNAME=admin
+      - PASSWORD=labadmin
+      # Bỏ qua sync feed lúc khởi động (feed đã có trong volume gvm-data).
+      # Muốn cập nhật feed mới (cần Internet): đổi thành false rồi up lại.
+      - SKIPSYNC=true
+    volumes:
+      - gvm-data:/data
+
+volumes:
+  gvm-data:
+    # Tái dùng đúng volume đã sync sẵn (không để compose tạo volume mới rỗng).
+    name: gvm-data
